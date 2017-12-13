@@ -2,9 +2,9 @@
 #include "main.h"
 
 // `static' in this context means that the vars aren't visible outside of file
-static const int ROOM_MAX_SIZE = 12;
-static const int ROOM_MIN_SIZE = 6;
-static const int MAX_ROOM_MONSTERS = 2;
+static const int ROOM_MAX_SIZE = 8;
+static const int ROOM_MIN_SIZE = 4;
+static const int MAX_ROOM_MONSTERS = 4;
 static const int MAX_ROOM_ITEMS = 1;
 
 Map::Map(int width, int height): width(width), height(height) {
@@ -13,7 +13,7 @@ Map::Map(int width, int height): width(width), height(height) {
 	// add a BSP tree and have it make rooms in the map
         TCODBsp bsp(0, 0, width, height);
 	// split recursively up to 8 times to make rooms at least the MAX_SIZEs; 1.5fs are for room dimensions/flatness
-	bsp.splitRecursive(NULL, 8, ROOM_MAX_SIZE, ROOM_MAX_SIZE, 1.5f, 1.5f);
+	bsp.splitRecursive(NULL, 50, ROOM_MAX_SIZE, ROOM_MAX_SIZE, 1.5f, 1.5f);
 	BspListener listener(*this);
 	bsp.traverseInvertedLevelOrder(&listener, NULL); // void* params can be just about anything
 }
@@ -29,7 +29,7 @@ bool Map::isWall(int x, int y) const {
 
 bool Map::canWalk(int x, int y) const  {
 	if(isWall(x, y)) return false;
-
+	
 	for(Actor** iterator = engine.actors.begin(); iterator != engine.actors.end(); iterator++) {
 		Actor* actor = *iterator;
 		if(actor->blocks && actor->x == x && actor->y == y) return false;
@@ -61,51 +61,57 @@ void Map::computeFov() {
 void Map::addItem(int x, int y) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	int choice = rand->getInt(0, 100);
-
-	if(choice < 30) {
+	
+	if(choice < 90) {
 		Actor* healthPotion = new Actor(x, y, '!', "health potion", TCODColor::yellow);
 		healthPotion->blocks = false;
 		healthPotion->pickable = new Healer(5);
 		engine.actors.push(healthPotion);
 		engine.sendToBack(healthPotion);
-	} else if(choice >= 30 && choice < 60) {
-		Actor* styxRifle = new Actor(x, y, '/', "Styx rifle", TCODColor::yellow);
-		styxRifle->blocks = false;
-		styxRifle->pickable = new StyxRifle(30, 10, 5);
-		engine.actors.push(styxRifle);
-		engine.sendToBack(styxRifle);
-	} else {
-		Actor* crossbow  = new Actor(x, y, '|', "crossbow", TCODColor::yellow);
-		crossbow->blocks = false;
-	        crossbow->pickable = new Crossbow(5, 5, 5);
-		engine.actors.push(crossbow);
-		engine.sendToBack(crossbow);
 	}
 }
 
 void Map::addMonster(int x, int y) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	int choice = rand->getInt(0, 100);
-	
-	if(choice < 10) {
-		Actor* giant_white_centipede = new Actor(x, y, 'c', "Giant white centipede", TCODColor::white);
-		giant_white_centipede->destructible = new MonsterDestructible(20, 4, "giant white centipede exoskeleton");
-	        giant_white_centipede->attacker = new Attacker(3);
-	        giant_white_centipede->ai = new MonsterAi();
-		engine.actors.push(giant_white_centipede);
-        } else if(choice >= 20 && choice < 60) {
-	        Actor* bright = new Actor(x, y, 'b', "Bright", TCODColor::yellow);
-		bright->destructible = new MonsterDestructible(10, 3, "dead bright");
-		bright->attacker = new Attacker(7);
-		bright->ai = new MonsterAi();
-		engine.actors.push(bright);
+	   
+	if(choice < 50) {
+		Actor* rat = new Actor(x, y, 'r', "Rat", TCODColor::lightGrey);
+		rat->attacker = new Attacker(3, 30, "bites");
+		rat->destructible = new MonsterDestructible(10, 1, "a dead rat");
+		rat->ai = new MonsterAi();
+		engine.actors.push(rat);
+	} else if(choice < 80) {
+		Actor* shroom = new Actor(x, y, 'm', "Mushroom", TCODColor::brass);
+		shroom->attacker = new Attacker(3, 20, "thumps");
+		// get random effect
+		Effect::EffectType types[1] = {Effect::POISON};		
+		shroom->attacker->setEffect(types[0], rand->getInt(2, 20));
+		shroom->destructible = new MonsterDestructible(10, 3, "mushroom pulp", TCODColor::brass);
+		shroom->ai = new MonsterAi();
+		engine.actors.push(shroom);
+	} else if(choice < 95) {
+		TCODColor colors[5] = {TCODColor::green, TCODColor::celadon, TCODColor::cyan, TCODColor::sky, TCODColor::violet};
+		TCODColor color = colors[rand->getInt(0, 4)];
+		Actor* slime = new Actor(x, y, 's', "Slime", color);
+		slime->attacker = new Attacker(3, 10, "smudges");
+		slime->spreadable = new Spreadable(1);
+		slime->destructible = new MonsterDestructible(5, 3, "sludge", color);
+		slime->ai = new MonsterAi();
+		engine.actors.push(slime);
 	} else {
-		Actor* spider = new Actor(x, y, 's', "Spider-monkey", TCODColor::han);
-		spider->destructible = new MonsterDestructible(10, 1, "spider-monkey exoskeleton");
-	        spider->attacker = new Attacker(3);
-	        spider->ai = new MonsterAi();
-		engine.actors.push(spider);
-	}	
+		Actor* redcap = new Actor(x, y, 'R', "Redcap", TCODColor::darkerRed);
+		redcap->attacker = new Attacker(4, 80, "clubs");
+		// get random effect
+		int numEffects = 2;
+		Effect::EffectType types[numEffects] = {Effect::POISON, Effect::BLINDNESS};
+		int effectChoice = rand->getInt(0, numEffects-1);
+		
+		redcap->attacker->setEffect(types[effectChoice], rand->getInt(25, 100));
+		redcap->destructible = new MonsterDestructible(10, 3, "a redcap corpse", TCODColor::brass);
+		redcap->ai = new MonsterAi();
+		engine.actors.push(redcap);
+	}
 }
 
 void Map::dig(int x1, int y1, int x2, int y2) {
@@ -159,10 +165,8 @@ void Map::createRoom(bool first, int x1, int y1, int x2, int y2) {
 		}
 		// place stairs in room so that stairs will end up in last room made
 		int wallNum = rand->getInt(0, 3); // pick a wall to put the stairs on (represented by one of four ints)
-		int wallx = (wallNum == 0? x1 : wallNum == 1? x2 : rand->getInt(x1, x2));
-		int wally = (wallNum == 2? y1 : wallNum == 3? y2 : rand->getInt(y1, y2));
-		// put a blank space on location of stairs so player can walk on it
-		map->setProperties(wallx, wally, true, true);
+		int wallx = (wallNum == 0? x1+1 : wallNum == 1? x2-1 : rand->getInt(x1+1, x2-1));
+		int wally = (wallNum == 2? y1+1 : wallNum == 3? y2-1 : rand->getInt(y1+1, y2-1));
 		// set location of stairs
 		engine.stairs->x = wallx;
 		engine.stairs->y = wally;
@@ -176,7 +180,7 @@ void Map::render(int xshift, int yshift) const {
 			if(isInFov(x, y)) {
 				TCODConsole::root->setChar(x+xshift, y+yshift, isWall(x, y)? '#' : '.');
 				TCODConsole::root->setCharForeground(x+xshift, y+yshift,
-								     isWall(x, y)? TCODColor::lighterAmber : TCODColor::darkestAmber);
+								     isWall(x, y)? TCODColor::lighterGrey : TCODColor::lightGrey);
 			} else if(isExplored(x, y)) {
 				TCODConsole::root->setCharBackground(x+xshift, y+yshift, isWall(x, y)? TCODColor::darkerGrey : TCODColor::darkGrey);
 			}
