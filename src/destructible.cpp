@@ -1,8 +1,8 @@
 // implementation for Destructibles
 #include "main.h"
 
-Destructible::Destructible(float maxHp, float defense, const char* corpseName):
-	maxHp(maxHp), hp(maxHp), defense(defense) {
+Destructible::Destructible(float maxHp, float defense, const char* corpseName, const TCODColor& corpseColor):
+	maxHp(maxHp), hp(maxHp), defense(defense), corpseColor(corpseColor) {
 	this->corpseName = _strdup(corpseName);
 }
 
@@ -21,13 +21,15 @@ float Destructible::takeDamage(Actor* owner, float damage) {
 		damage = 0;
 	}
 
+	if(hp > 0 && owner->spreadable) owner->spreadable->spread(owner);
+	
 	return damage;
 }
 
 void Destructible::die(Actor* owner) {
 	// make the owner into a bloodstain/corpse that can be walked upon
-	owner->ch = '*';
-	owner->color = TCODColor::darkRed;
+	owner->ch = '.';
+	owner->color = corpseColor;
 	owner->name = corpseName;
 	owner->blocks = false;
 	// this ensures the corpse isn't drawn on top of living things
@@ -43,8 +45,8 @@ float Destructible::heal(float amt) {
 	return amt;
 }
 
-MonsterDestructible::MonsterDestructible(float maxHp, float defense, const char* corpseName):
-	Destructible(maxHp, defense, corpseName) {}
+MonsterDestructible::MonsterDestructible(float maxHp, float defense, const char* corpseName, const TCODColor& corpseColor):
+	Destructible(maxHp, defense, corpseName, corpseColor) {}
 
 void MonsterDestructible::die(Actor* owner) {
 	engine.gui->message(Gui::ATTACK, "The %s died.", owner->name);

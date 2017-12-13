@@ -1,7 +1,7 @@
 // This is a test program for the Libtcod roguelike library
 #include "main.h"
 
-Engine engine(70, 60);
+Engine engine(80, 60);
 
 int main() {
 	engine.load();

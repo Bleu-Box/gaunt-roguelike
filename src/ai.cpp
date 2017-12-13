@@ -128,7 +128,7 @@ bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 		Actor* actor = *iterator;
 	        if(actor->x == targetx && actor->y == targety) {
 			if(actor->destructible && actor->destructible->isDead())
-				engine.gui->message(Gui::OBSERVE, "Yuck. There's a %s here.", actor->name);
+				engine.gui->message(Gui::OBSERVE, "Yuck. There's %s here.", actor->name);
 			if(actor->pickable) engine.gui->message(Gui::OBSERVE, "There's a %s here that you can collect.", actor->name);
 		}
 	}
@@ -173,7 +173,7 @@ Actor* PlayerAi::getFromInventory(Actor* owner) {
 	return NULL;
 }
 
-void MonsterAi::update(Actor* owner) {
+void MonsterAi::update(Actor* owner) {	
 	// don't do anything if owner is dead
 	if(owner->destructible && owner->destructible->isDead()) return;
 	// otherwise, move towards the player or attack it (if it's visible to the owner)
@@ -185,34 +185,28 @@ void MonsterAi::update(Actor* owner) {
 		moveCount--;
 	}
 
-	if(moveCount > 0) moveOrAttack(owner, engine.player->x,engine.player->y);
+	if(moveCount > 0) {
+		moveOrAttack(owner, engine.player->x, engine.player->y);
+	}
 }
 
 void MonsterAi::moveOrAttack(Actor* owner, int targetx, int targety) {
    int dx = targetx-owner->x;
    int dy = targety-owner->y;
 
-   int stepdx = (dx > 0? 1 : -1);
-   int stepdy = (dy > 0? 1 : -1);
+   int stepdx = (dx == 0? 0 : dx > 0? 1 : -1);
+   int stepdy = (dy == 0? 0 : dy > 0? 1 : -1);
    
    float distance = sqrtf(dx*dx+dy*dy);
 
-   // normalize distance vector (if it's to far for meelee)
-   if(distance >= 2) {
-	   dx = (int) (round(dx/distance));
-	   dy = (int) (round(dy/distance));
-   }
-
-   // walk towards the target if possible
-   if(engine.map->canWalk(owner->x+dx,owner->y+dy)) {
-	   owner->x += dx;
-	   owner->y += dy;
-   } else if (engine.map->canWalk(owner->x+stepdx,owner->y)) {
-           owner->x += stepdx;
-   } else if (engine.map->canWalk(owner->x,owner->y+stepdy)) {
-           owner->y += stepdy;
-   } else if(owner->attacker) {
-	   // attack player if we're within meelee range
+   if(distance <= 1 && owner->attacker) {
 	   owner->attacker->attack(owner, engine.player);
+   } else if(engine.map->canWalk(owner->x+stepdx, owner->y+stepdy)) {
+	   owner->x += stepdx;
+	   owner->y += stepdy;
+   } else if(engine.map->canWalk(owner->x+stepdx, owner->y)) {
+	   owner->x += stepdx;
+   } else if(engine.map->canWalk(owner->x, owner->y+stepdy)) {
+	   owner->y += stepdy;
    }
 }

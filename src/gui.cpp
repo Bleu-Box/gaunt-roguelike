@@ -27,7 +27,6 @@ Gui::Message::~Message() {
 	free(text);
 }
 
-// TODO: make newlines for messages that don't fit
 void Gui::render() {
 	console->setDefaultBackground(TCODColor::black);
 	console->clear();
@@ -165,10 +164,11 @@ void Menu::addItem(MenuItemCode code, const char* label) {
 
 Menu::MenuItemCode Menu::pick() {
         static TCODImage img("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/images/background.png");
+	static const int BKGND_IMG_SIZE = engine.screenWidth <= engine.screenHeight? engine.screenWidth : engine.screenHeight;
 	
 	int selectedItem = 0;
 	while(!TCODConsole::isWindowClosed()) {
-		img.blitRect(TCODConsole::root, 0, 0, engine.screenWidth, engine.screenHeight);
+		img.blitRect(TCODConsole::root, 0, 0, BKGND_IMG_SIZE, BKGND_IMG_SIZE);
 
 		int currentItem = 0;
 		for (MenuItem** iterator = items.begin(); iterator != items.end(); iterator++) {

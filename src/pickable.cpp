@@ -35,7 +35,7 @@ Healer::Healer(float amt): amt(amt) {}
 bool Healer::use(Actor *owner, Actor *wearer) {
 	if(wearer->destructible) {
 		float amountHealed = wearer->destructible->heal(amt);
-		engine.gui->message(Gui::ACTION, "%s drinks a health potion,\n gaining %.1f health.", wearer->name, amountHealed);
+		engine.gui->message(Gui::ACTION, "%s drinks a health potion, gaining %.1f health.", wearer->name, amountHealed);
 		if(amountHealed > 0) return Pickable::use(owner, wearer);
 	}
 	return false;
@@ -44,17 +44,17 @@ bool Healer::use(Actor *owner, Actor *wearer) {
 StyxRifle::StyxRifle(float range, float damage, int ammo): range(range), damage(damage), ammo(ammo), maxAmmo(ammo) {}
 
 bool StyxRifle::use(Actor* owner, Actor* wearer) {
-	engine.gui->message(Gui::OBSERVE, "Left-click a space to \n shoot your %s at it.", owner->name);
+	engine.gui->message(Gui::OBSERVE, "Left-click a space to shoot your %s at it.", owner->name);
 	int x, y;
 	// if engine.pickTile succeeds, it will set x and y to what the player selected
 	if(!engine.pickTile(&x, &y, range)) return false;
 	
-	engine.gui->message(Gui::ATTACK, "You shoot the %s\n at your target.", owner->name);
+	engine.gui->message(Gui::ATTACK, "You shoot the %s at your target.", owner->name);
 	
 	for(Actor** iterator = engine.actors.begin(); iterator != engine.actors.end(); iterator++) {
 		Actor* actor = *iterator;
 		if(actor != wearer && actor->destructible && !actor->destructible->isDead() && actor->getDistance(x, y) <= range) {
-			engine.gui->message(Gui::ATTACK, "The %s gets hit and \n suffers %.1f damage.", actor->name, damage);
+			engine.gui->message(Gui::ATTACK, "The %s gets hit and suffers %.1f damage.", actor->name, damage);
 			actor->destructible->takeDamage(actor, damage);
 		}
 	}

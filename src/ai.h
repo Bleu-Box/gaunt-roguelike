@@ -22,5 +22,5 @@ class MonsterAi: public Ai {
  protected:
 	int moveCount; // how long it takes to stop chasing target
 	
-	void moveOrAttack(Actor* owner, int targetx, int targety); // make this void bc we don't need to know if the monster moved
+	void moveOrAttack(Actor* owner, int targetx, int targety); 
 };

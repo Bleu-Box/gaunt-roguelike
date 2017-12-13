@@ -6,11 +6,12 @@ class Destructible {
         float hp; // current health
         float defense; // hit points deflected
 	const char* corpseName;
+	TCODColor corpseColor;
 
-	Destructible(float maxHp, float defense, const char* corpseName);
+	Destructible(float maxHp, float defense, const char* corpseName, const TCODColor& corpseColor=TCODColor::darkRed);
 	virtual ~Destructible();
 	
-	inline bool isDead() {return hp <= 0;} // inline functions are fast if they're small
+        bool isDead() { return hp <= 0; } 
 	float takeDamage(Actor* owner, float damage);
 	float heal(float amt);
 	virtual void die(Actor* owner); // death is handled by subclasses - this allows death to be handled differently
@@ -19,7 +20,9 @@ class Destructible {
 // these are subclasses that are specialized in how they die
 class MonsterDestructible: public Destructible {
  public:
-	MonsterDestructible(float maxHp, float defense, const char* corpseName);
+	MonsterDestructible(float maxHp, float defense, const char* corpseName,
+			    const TCODColor& corpseColor=TCODColor::darkRed);
+		
 	void die(Actor* owner);
 };
 
