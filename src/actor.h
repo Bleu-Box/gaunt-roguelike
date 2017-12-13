@@ -1,6 +1,6 @@
 // This contains code for the actor class definition
 
-class Actor {
+class Actor {	
  public:
 	int x, y;
 	int ch; // using an int rather than a char allows you to use more than 256 different chars
@@ -11,8 +11,9 @@ class Actor {
 	Ai* ai; // smth that's self-updating
 	Pickable* pickable; // something that can be picked and used
 	Container* container; // something that can contain other actors
+	Spreadable* spreadable; // allows actor to spread children around itself (i.e. fire spreading)x
 	TCODColor color;
-
+	
 	Actor(int x, int y, int ch, const char* name, const TCODColor& color);
 	~Actor();
 	
@@ -20,4 +21,8 @@ class Actor {
 	void update();
 	bool moveOrAttack(int x, int y);
 	float getDistance(int cx, int cy) const;
+	void addEffect(Effect* effect);
+
+ private:
+	TCODList<Effect*> effects; // magic effects acting on actor
 };
