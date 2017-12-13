@@ -9,12 +9,12 @@ class Engine {
 		IDLE, // no new turn - just the same screen as before
 		NEW_TURN // update things
 	} gameStatus;
-	
+
 	TCODList<Actor*> actors;
 	Actor* player;
 	Actor* stairs;
 	Map* map;
-	int fovRadius; // you could change radius for a potion of blindess/confusion
+	int fovRadius; 
 	int screenWidth;
 	int screenHeight;
 	Gui* gui;
@@ -34,6 +34,10 @@ class Engine {
 	void load();
 	void terminate();
 	void nextLevel();
+	void setRenderMap(bool b) { renderMap = b; }
+
+ private:
+	bool renderMap; // this controls whether we show map and monsters (turn it off for 'blindness')
 };
 
 // This tells the compiler that there's a global var named engine somewhere in a .cpp file

@@ -2,26 +2,25 @@
 
 Engine::Engine(int screenWidth, int screenHeight): 
 	gameStatus(STARTUP), player(NULL), map(NULL), fovRadius(10),
-	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
+	screenWidth(screenWidth), screenHeight(screenHeight), level(1), renderMap(true) {
 	// set font 
 	TCODConsole::setCustomFont("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/fonts/dejavu16x16_gs_tc.png", TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
 	gui = new Gui();
 }
-
+ 
 Engine::~Engine() {
 	terminate();
 	delete gui;
 }
-
+ 
 void Engine::init() {
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
 	player->destructible = new PlayerDestructible(30, 2, "your cadaver");
-	player->attacker = new Attacker(5);
+	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi();
-	// create 26 inventory slots for player - 1 for each letter of the alphabet
-	player->container = new Container(26);	
+	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet
 	actors.push(player);
 
 	// the stairs -- even though they begin w/ a location at (0, 0), Map::createRoom will put them somewhere else
@@ -32,7 +31,7 @@ void Engine::init() {
 	TCODRandom* rand = TCODRandom::getInstance();
 	map = new Map(rand->getInt(screenWidth, screenWidth*level), rand->getInt(screenHeight, screenHeight*level));
 	
-	gui->message(Gui::OBSERVE, "Welcome to the dungeons of Fyrgenhold!");
+	gui->message(Gui::ACTION, "You enter the mouth of the cave, finding yourself in a\n claustrophobic mess of tunnels.");
 	gameStatus = STARTUP;
 }
 
@@ -51,7 +50,7 @@ void Engine::load() {
 	        init();
 	}
 }
-
+  
 void Engine::terminate() {
 	actors.clearAndDelete();
 	if(map) delete map;
@@ -64,9 +63,9 @@ void Engine::update() {
 	// get key and update player
 	TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS, &lastKey, NULL);
 	player->update();
-
+		
 	TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS|TCOD_EVENT_MOUSE, &lastKey, &mouse);
-	// update actors (except for players)
+	// update actors (except for player)
 	if(gameStatus == NEW_TURN) {
 		for(Actor** iterator = actors.begin(); iterator != actors.end(); iterator++) {
 			Actor* actor = *iterator;
@@ -77,17 +76,16 @@ void Engine::update() {
 
 void Engine::render() {
 	// Calculate shift amounts so player remains centered.
-	// TODO: the shifting methods work, but they don't work w/out args
 	int xshift = screenWidth/2-player->x;
 	int yshift = screenHeight/2-player->y;
 	
 	TCODConsole::root->clear();
-	map->render(xshift, yshift);
-	// `actors' is a TCODList, and TCODLists have a begin() method for getting pointer to start elt
+	if(renderMap) map->render(xshift, yshift);
+
 	for(Actor** iterator = actors.begin(); iterator != actors.end(); iterator++) {
 		Actor* actor = *iterator;
 		if(map->isInFov(actor->x, actor->y)) {
-			actor->render(xshift, yshift);
+			if(renderMap || actor == player) actor->render(xshift, yshift);
 		        gui->render();
 		}
 	}
@@ -102,7 +100,7 @@ void Engine::sendToBack(Actor* actor) {
 Actor* Engine::getClosestMonster(int x, int y, float range) const {
 	Actor* closest = NULL;
 	float bestDist = 1E6f; // starts at impossibly high value
-
+	
 	for(Actor** iterator = actors.begin(); iterator != actors.end(); iterator++) {
 		Actor* actor = *iterator;
 		if(actor != player && actor->destructible && !actor->destructible->isDead()) {
@@ -113,7 +111,7 @@ Actor* Engine::getClosestMonster(int x, int y, float range) const {
 			}
 		}
 	}
-
+	
 	return closest;
 }
 
