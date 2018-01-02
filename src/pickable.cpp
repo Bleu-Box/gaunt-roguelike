@@ -1,16 +1,18 @@
+#include <algorithm>
 #include "main.h"
 
 // try to add owner to player's container, and then get rid of self
-bool Pickable::pick(Actor *owner, Actor *wearer) {
+bool Pickable::pick(Actor* owner, Actor* wearer) {
        if(wearer->container && wearer->container->add(owner)) {
-	       engine.actors.remove(owner);
+	       auto i = std::find(engine.actors.begin(), engine.actors.end(), owner);
+	       engine.actors.erase(i);
 	       return true;
        }
        return false;
 }
 
 // the only thing to do here (since it's the base class) is to delete owner upon use, which most items do
-bool Pickable::use(Actor *owner, Actor *wearer) {
+bool Pickable::use(Actor* owner, Actor* wearer) {
 	if(wearer->container) {
 		wearer->container->remove(owner);
 		delete owner;
@@ -23,10 +25,10 @@ bool Pickable::use(Actor *owner, Actor *wearer) {
 void Pickable::drop(Actor* owner, Actor* wearer) {
 	if(wearer->container) {
 		wearer->container->remove(owner);
-		engine.actors.push(owner);
+	        engine.actors.push_back(owner);
 		owner->x = wearer->x;
 		owner->y = wearer->y;
-		engine.gui->message(Gui::ACTION, "%s drops the %s.", wearer->name, owner->name);
+	        engine.gui->message(Gui::ACTION, wearer->getName() + " drops the " + owner->getName() + ".");
 	}
 }
 
@@ -35,12 +37,13 @@ Healer::Healer(float amt): amt(amt) {}
 bool Healer::use(Actor *owner, Actor *wearer) {
 	if(wearer->destructible) {
 		float amountHealed = wearer->destructible->heal(amt);
-		engine.gui->message(Gui::ACTION, "%s drinks a health potion, gaining %.1f health.", wearer->name, amountHealed);
+	        engine.gui->message(Gui::ACTION, wearer->getName() + " drinks a health potion, gaining " + std::to_string((int) amountHealed) + " health.");
 		if(amountHealed > 0) return Pickable::use(owner, wearer);
 	}
 	return false;
 }
 
+/*
 StyxRifle::StyxRifle(float range, float damage, int ammo): range(range), damage(damage), ammo(ammo), maxAmmo(ammo) {}
 
 bool StyxRifle::use(Actor* owner, Actor* wearer) {
@@ -68,4 +71,5 @@ Crossbow::Crossbow(float range, float damage, int ammo): StyxRifle(range, damage
 bool Crossbow::use(Actor* owner, Actor* wearer) {
 	return StyxRifle::use(owner, wearer);
 }
+*/
 

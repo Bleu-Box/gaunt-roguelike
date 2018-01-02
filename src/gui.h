@@ -1,4 +1,6 @@
 // the game's GUI
+#include <vector>
+#include <string>
 
 class Menu {
  public:
@@ -7,46 +9,47 @@ class Menu {
 	~Menu();
 	
 	void clear();
-	void addItem(MenuItemCode code, const char* label);
+	void addItem(MenuItemCode code, std::string label);
 	MenuItemCode pick();
 	
  protected:
 	struct MenuItem {
 		MenuItemCode code;
-		const char* label;
+		std::string label;
 	};
 
-	TCODList<MenuItem*> items;
+	std::vector<MenuItem*> items;
 };
-
 
 class Gui {
  public:
 	// messages sent to the GUI can be categorized into a few types
 	// the type dictates what color the message will be
 	enum MessageType {OBSERVE, ACTION, ATTACK};
+
 	Menu menu;
 	
 	Gui();
 	~Gui();
 
 	void render();
-	void message(MessageType, const char* text, ...);
+	void message(MessageType, std::string text);
 	void clear();
 	
  protected:
-	TCODConsole* console;
+	TCODConsole* dataConsole;
+	TCODConsole* messageConsole;
 
 	struct Message {
-		char* text;
+		std::string text;
 		TCODColor color;
-		Message(const char* text, const TCODColor& color);
+		Message(std::string text, const TCODColor& color);
 		~Message();
 	};
 	
-	TCODList<Message*> log;
+	std::vector<Message*> log;
 	
-	void renderBar(int x, int y, int width, const char* name,
+	void renderBar(int x, int y, int width, std::string name,
 		       float value, float maxValue, const TCODColor& barColor,
 		       const TCODColor& backColor);
 

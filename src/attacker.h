@@ -1,11 +1,12 @@
 //  the class for things that can attack
+#include <string>
+
 class Attacker {
  public:
 	float power;
 	int accuracy; // must be in range [0..100]
-	const char* action; // the action the attacker does to its target
 	
-	Attacker(float power, int accuracy, const char* action);
+	Attacker(float power, int accuracy, std::string action);
 		
 	void attack(Actor* owner, Actor* target);
 	Effect::EffectType getEffectType() const { return effectType; }
@@ -15,6 +16,7 @@ class Attacker {
 
  private:
 	Effect::EffectType effectType; // for magical effects
+	std::string action; // the action the attacker does to its target
 	int effectDuration;
 	bool enchanted; // flags whether or not attacker has effect
 };

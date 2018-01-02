@@ -1,4 +1,5 @@
 // implementation for Map
+#include <functional>
 #include "main.h"
 
 // `static' in this context means that the vars aren't visible outside of file
@@ -19,7 +20,7 @@ Map::Map(int width, int height): width(width), height(height) {
 }
 
 Map::~Map() {
-	delete [] tiles;
+	delete[] tiles;
 	delete map;
 }
 
@@ -30,8 +31,7 @@ bool Map::isWall(int x, int y) const {
 bool Map::canWalk(int x, int y) const  {
 	if(isWall(x, y)) return false;
 	
-	for(Actor** iterator = engine.actors.begin(); iterator != engine.actors.end(); iterator++) {
-		Actor* actor = *iterator;
+	for(Actor* actor : engine.actors) {
 		if(actor->blocks && actor->x == x && actor->y == y) return false;
 	}
 
@@ -54,7 +54,7 @@ bool Map::isInFov(int x, int y) const {
 }
 
 void Map::computeFov() {
-	map->computeFov(engine.player->x, engine.player->y, engine.fovRadius);
+	map->computeFov(engine.player->x, engine.player->y, engine.getFovRadius());
 }
 
 // add items to the map randomly and send them to back
@@ -66,11 +66,11 @@ void Map::addItem(int x, int y) {
 		Actor* healthPotion = new Actor(x, y, '!', "health potion", TCODColor::yellow);
 		healthPotion->blocks = false;
 		healthPotion->pickable = new Healer(5);
-		engine.actors.push(healthPotion);
+		engine.actors.push_back(healthPotion);
 		engine.sendToBack(healthPotion);
 	}
 }
-
+ 
 void Map::addMonster(int x, int y) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	int choice = rand->getInt(0, 100);
@@ -78,39 +78,37 @@ void Map::addMonster(int x, int y) {
 	if(choice < 50) {
 		Actor* rat = new Actor(x, y, 'r', "Rat", TCODColor::lightGrey);
 		rat->attacker = new Attacker(3, 30, "bites");
-		rat->destructible = new MonsterDestructible(10, 1, "a dead rat");
-		rat->ai = new MonsterAi();
-		engine.actors.push(rat);
-	} else if(choice < 80) {
+		rat->destructible = new MonsterDestructible(10, 1, 0);
+		rat->ai = new MonsterAi(2);
+		engine.actors.push_back(rat);
+	}  else if(choice < 80) {
 		Actor* shroom = new Actor(x, y, 'm', "Mushroom", TCODColor::brass);
 		shroom->attacker = new Attacker(3, 20, "thumps");
 		// get random effect
 		Effect::EffectType types[1] = {Effect::POISON};		
-		shroom->attacker->setEffect(types[0], rand->getInt(2, 20));
-		shroom->destructible = new MonsterDestructible(10, 3, "mushroom pulp", TCODColor::brass);
-		shroom->ai = new MonsterAi();
-		engine.actors.push(shroom);
+		shroom->attacker->setEffect(types[rand->getInt(0, 0)], rand->getInt(2, 20));
+		shroom->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass);
+		shroom->ai = new MonsterAi(1);
+		engine.actors.push_back(shroom);
 	} else if(choice < 95) {
-		TCODColor colors[5] = {TCODColor::green, TCODColor::celadon, TCODColor::cyan, TCODColor::sky, TCODColor::violet};
-		TCODColor color = colors[rand->getInt(0, 4)];
-		Actor* slime = new Actor(x, y, 's', "Slime", color);
+		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::green);
 		slime->attacker = new Attacker(3, 10, "smudges");
-		slime->spreadable = new Spreadable(1);
-		slime->destructible = new MonsterDestructible(5, 3, "sludge", color);
-		slime->ai = new MonsterAi();
-		engine.actors.push(slime);
+		slime->spreadable = new Spreadable(4);
+		slime->destructible = new MonsterDestructible(5, 3, 0, TCODColor::green);
+		slime->ai = new MonsterAi(1);
+		MonsterAi* mai = dynamic_cast<MonsterAi*>(slime->ai);
+	        mai->spreadPredicate = [](const Actor& self)->bool {
+				return self.destructible->getHp() < self.destructible->getMaxHp();
+		};		
+		engine.actors.push_back(slime);
 	} else {
-		Actor* redcap = new Actor(x, y, 'R', "Redcap", TCODColor::darkerRed);
+		Actor* redcap = new Actor(x, y, 'r', "Redcap", TCODColor::darkerRed);
 		redcap->attacker = new Attacker(4, 80, "clubs");
-		// get random effect
-		int numEffects = 2;
-		Effect::EffectType types[numEffects] = {Effect::POISON, Effect::BLINDNESS};
-		int effectChoice = rand->getInt(0, numEffects-1);
-		
-		redcap->attacker->setEffect(types[effectChoice], rand->getInt(25, 100));
-		redcap->destructible = new MonsterDestructible(10, 3, "a redcap corpse", TCODColor::brass);
-		redcap->ai = new MonsterAi();
-		engine.actors.push(redcap);
+		Effect::EffectType types[2] = {Effect::POISON, Effect::BLINDNESS};
+		redcap->attacker->setEffect(types[rand->getInt(0, 1)], rand->getInt(25, 100));
+		redcap->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass);
+		redcap->ai = new MonsterAi(1);
+		engine.actors.push_back(redcap);
 	}
 }
 
@@ -127,7 +125,7 @@ void Map::dig(int x1, int y1, int x2, int y2) {
 		y2 = y1;
 		y1 = temp;
 	}
-
+        
 	// open up tiles within rectangular area given
 	for(int tilex = x1; tilex < x2; tilex++) {
 		for(int tiley = y1; tiley < y2; tiley++) {
@@ -182,7 +180,8 @@ void Map::render(int xshift, int yshift) const {
 				TCODConsole::root->setCharForeground(x+xshift, y+yshift,
 								     isWall(x, y)? TCODColor::lighterGrey : TCODColor::lightGrey);
 			} else if(isExplored(x, y)) {
-				TCODConsole::root->setCharBackground(x+xshift, y+yshift, isWall(x, y)? TCODColor::darkerGrey : TCODColor::darkGrey);
+				TCODConsole::root->setChar(x+xshift, y+yshift, isWall(x, y)? '#' : '.');
+				TCODConsole::root->setCharForeground(x+xshift, y+yshift, isWall(x, y)? TCODColor::darkestGrey : TCODColor::darkestGrey);
 			}
 		}
         }		

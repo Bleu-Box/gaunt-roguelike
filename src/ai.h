@@ -1,12 +1,22 @@
+#include <functional>
+
 class Ai {
  public:
+	bool confused;
+	
+	Ai(int speed);	
 	virtual ~Ai() {};
 	
 	virtual void update(Actor* owner) = 0; // this is an abstract method meant to be implemented only by subclasses
+
+ protected:
+	int speed;
 };
 
 class PlayerAi: public Ai {
  public:
+	PlayerAi();
+	
 	void update(Actor* owner);
 	
  protected:
@@ -16,11 +26,14 @@ class PlayerAi: public Ai {
 };
 
 class MonsterAi: public Ai {
- public:
-	void update(Actor* owner);
+ public:	
+	MonsterAi(int speed);
 	
- protected:
+	void update(Actor* owner);
+	std::function<bool(const Actor&)> spreadPredicate; // this decides whether or not owner will spread	
+
+ protected: 
 	int moveCount; // how long it takes to stop chasing target
 	
-	void moveOrAttack(Actor* owner, int targetx, int targety); 
+	void moveOrAttack(Actor* owner, int targetx, int targety);
 };

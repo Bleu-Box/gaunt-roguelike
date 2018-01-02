@@ -2,7 +2,7 @@
 
 class Effect {
  public:
-	enum EffectType {POISON, BLINDNESS};
+	enum EffectType {POISON, BLINDNESS, CONFUSION};
 	
 	Effect(EffectType type, int duration);
 

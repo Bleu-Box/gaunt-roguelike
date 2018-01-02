@@ -1,11 +1,9 @@
-#include <stdexcept>
+#include <cassert>
 #include "main.h"
 
-Attacker::Attacker(float power, int accuracy, const char* action): power(power), accuracy(accuracy), action(action), enchanted(false) {
+Attacker::Attacker(float power, int accuracy, std::string action): power(power), accuracy(accuracy), action(action), enchanted(false) {
 	// accuracy must be in range [0..100]
-	if(accuracy < 0 || accuracy > 100) {
-		throw std::invalid_argument("Last argument must be within range 0..100.");
-	}
+	assert(accuracy >= 0 && accuracy <= 100);
 }
 
 void Attacker::setEffect(Effect::EffectType type, int duration) {
@@ -24,19 +22,16 @@ void Attacker::attack(Actor* owner, Actor* target) {
 			}
 			
 			if(power-target->destructible->defense > 0) {
-				engine.gui->message(Gui::ATTACK, "%s %s %s, inflicting %g damage.",
-						   owner->name, action, target->name, power-target->destructible->defense);
+				engine.gui->message(Gui::ATTACK, owner->getName() + " " + action + " " + target->getName() +
+						    ", inflicting " + std::to_string((int) (power-target->destructible->defense)) + " damage.");
 			} else { 
-				engine.gui->message(Gui::ATTACK, "%s %s %s, but it has no effect!",
-						    owner->name, action, target->name);            
+			        engine.gui->message(Gui::ATTACK, owner->getName() + " " + action +
+						    " " + target->getName() + ", but it has no effect!");            
 			}
 		} else {
-			engine.gui->message(Gui::OBSERVE, "%s misses %s.", owner->name, target->name);
+		        engine.gui->message(Gui::OBSERVE, owner->getName() + " misses " + target->getName() + ".");
 		}
 		
 		target->destructible->takeDamage(target, power);		
-	} else {
-		// if the owner is trying to attack something that can't be harmed
-		engine.gui->message(Gui::OBSERVE, "%s %s %s.", owner->name, action, target->name);
-	}
+	} 
 }

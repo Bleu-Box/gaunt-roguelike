@@ -1,120 +1,130 @@
-#include <stdio.h>
-#include <stdarg.h>
+#include <algorithm>
 #include "main.h"
 
 static const int PANEL_HEIGHT = 7;
-static const int BAR_WIDTH = 20;
-static const int MSG_X = BAR_WIDTH+2;
+static const int BAR_WIDTH = 15;
+static const int MSG_X = 1;
 static const int MSG_HEIGHT = PANEL_HEIGHT-1;
 
 Gui::Gui() {
-	console = new TCODConsole(engine.screenWidth, PANEL_HEIGHT);
+	dataConsole = new TCODConsole(BAR_WIDTH*2, engine.getScreenHeight());
+	messageConsole = new TCODConsole(engine.getScreenWidth(), PANEL_HEIGHT);
 }
 
 Gui::~Gui() {
-	delete console;
+	delete dataConsole;
+	delete messageConsole;
         clear();
 }
 
 void Gui::clear() {
-	log.clearAndDelete();
+	log.clear();
 }
 
-Gui::Message::Message(const char* text, const TCODColor& color):
-	text(strdup(text)), color(color) {}
+Gui::Message::Message(std::string text, const TCODColor& color):
+	text(text), color(color) {}
 
-Gui::Message::~Message() {
-	free(text);
-}
+Gui::Message::~Message() {}
 
 void Gui::render() {
-	console->setDefaultBackground(TCODColor::black);
-	console->clear();
+	dataConsole->setDefaultBackground(TCODColor::black);
+	dataConsole->clear();
 
-	// player's health bar
-	renderBar(1, 1, BAR_WIDTH, "Health", engine.player->destructible->hp, 
-		  engine.player->destructible->maxHp, 
-		  TCODColor::desaturatedHan, TCODColor::darkestHan);
+	dataConsole->setDefaultForeground(TCODColor::white);
+	dataConsole->print(0, 0, "Level %d", engine.getLevel());
+	dataConsole->print(1, 1, "Defense: %d", engine.player->destructible->defense);
+	dataConsole->print(1, 2, "Acc: %d%", engine.player->attacker->accuracy);
+	dataConsole->print(1, 3, "Dmg: %d", engine.player->attacker->power);
 
+	// print the health of actors
+	int hBar_y = 0;
+	// get visible actors and sort them by proximity to player
+	std::vector<Actor*> visibleActors(engine.actors.size());
+	auto it = std::copy_if(engine.actors.begin(), engine.actors.end(), visibleActors.begin(), [](Actor* a) {
+			return a->destructible && !a->destructible->isDead()
+			         && engine.map->isInFov(a->x, a->y);
+		});
+	visibleActors.resize(std::distance(visibleActors.begin(), it));
+	std::sort(visibleActors.begin(), visibleActors.end(), [](Actor* a, Actor* b) {
+			return a->getDistance(engine.player->x, engine.player->y)
+				< b->getDistance(engine.player->x, engine.player->y);
+		});
+	// TODO: Fix the bug where the player bar gets duplicated when the level goes up
+	for(Actor* actor : visibleActors) {
+		renderBar(0, 5+hBar_y, BAR_WIDTH, actor->getName(),
+			  actor->destructible->getHp(), 
+			  actor->destructible->getMaxHp(), 
+			  TCODColor::darkAzure, TCODColor::darkestAzure);
+		hBar_y += 2;
+	}
+
+	messageConsole->setDefaultBackground(TCODColor::black);
+        messageConsole->clear();
+	
 	// the message log
-	int y = 1;
+	int msg_y = 1;
 	float colorCoef = 0.4f; // modifier to make older lines appear to fade
-	for(Message** iterator = log.begin(); iterator != log.end(); iterator++) {
-		Message* message = *iterator;
-		console->setDefaultForeground(message->color*colorCoef);
-		console->print(MSG_X, y, message->text);
-		y++;
+	for(Message* message : log) {
+		messageConsole->setDefaultForeground(message->color*colorCoef);
+		messageConsole->print(MSG_X, msg_y, message->text.c_str());
+		msg_y++;
 		if(colorCoef < 1.0f) colorCoef+=0.3f;
 	}	
 
-	renderMouseLook();
-
-	// show dungeon level
-	console->setDefaultForeground(TCODColor::white);
-	console->print(3, 3, "Level %d", engine.level);
+	// renderMouseLook();
 	
 	// blit the GUI console on the root console
-	TCODConsole::blit(console, 0, 0, engine.screenWidth, PANEL_HEIGHT, 
-			  TCODConsole::root, 0, engine.screenHeight-PANEL_HEIGHT);
+	TCODConsole::blit(messageConsole, 0, 0, 100, PANEL_HEIGHT, 
+			  TCODConsole::root, MSG_X, engine.getScreenHeight()-PANEL_HEIGHT);
+
+	TCODConsole::blit(dataConsole, 0, 0, 100, engine.getScreenHeight(), 
+			  TCODConsole::root, engine.getScreenWidth()-BAR_WIDTH*1.2, 1);
 }
 
-void Gui::renderBar(int x, int y, int width, const char* name, float value,
+// shows health bar
+void Gui::renderBar(int x, int y, int width, std::string name, float value,
 		    float maxValue, const TCODColor& barColor, const TCODColor& backColor) {
-	console->setDefaultBackground(backColor);
-	console->rect(x, y, width, 1, false, TCOD_BKGND_SET);
-
+	dataConsole->setDefaultBackground(backColor);
+	dataConsole->rect(x, y, width, 1, false, TCOD_BKGND_SET);
+	
 	int barWidth = (int) (value/maxValue*width);
 	if(barWidth > 0) {
 		// draw the bar
-		console->setDefaultBackground(barColor);
-		console->rect(x, y, barWidth, 1, false, TCOD_BKGND_SET);
+		dataConsole->setDefaultBackground(barColor);
+		dataConsole->rect(x, y, barWidth, 1, false, TCOD_BKGND_SET);
 	}
 
 	// print text on top of the bar
-	console->setDefaultForeground(TCODColor::white);
-	console->printEx(x+width/2, y, TCOD_BKGND_NONE, TCOD_CENTER, "%s", name);
+	dataConsole->setDefaultForeground(TCODColor::white);
+	dataConsole->printEx(x+width/2, y, TCOD_BKGND_NONE, TCOD_CENTER, "%s", name.c_str());
 }
 
 void Gui::renderMouseLook() {
 	// don't render if mouse isn't in FOV
-	if(!engine.map->isInFov(engine.mouse.cx, engine.mouse.cy)) return;
+	if(!engine.map->isInFov(engine.getMouse().cx, engine.getMouse().cy)) return;
 
 	// find all the actors in the cell and list them in a string
 	char buf[128] = "";
 	bool first = true;
-	for(Actor** iter = engine.actors.begin(); iter != engine.actors.end(); iter++) {
-		Actor* actor = *iter;
+	for(Actor* actor : engine.actors) {
 		// find actors under the mouse cursor
-		if(actor->x == engine.mouse.cx && actor->y == engine.mouse.cy) {
+		if(actor->x == engine.getMouse().cx && actor->y == engine.getMouse().cy) {
 			if(!first) {
 				strcat(buf, ", ");
 			} else {
 				first = false;
 			}
-			strcat(buf, actor->name);
+			strcat(buf, actor->getName().c_str());
 		}
 	}
 
 	// display the list of actors under the mouse cursor
-	console->setDefaultForeground(TCODColor::lightGrey);
-	console->print(1, 0, buf);
+        messageConsole->setDefaultForeground(TCODColor::lightGrey);
+	messageConsole->print(1, 0, buf);
 }
 
-// this is really confusing
-void Gui::message(MessageType mType, const char* text, ...) {
-	// this is all the weird stuff we need to do to get text from the varargs
-	// it uses stuff from the <stdarg.h> header
-	va_list ap;
-	char buf[128];
-	va_start(ap, text);
-	vsprintf(buf, text, ap);
-	va_end(ap);
-
-	char* lineBegin = buf;
-	char* lineEnd;
-
-	TCODColor color;
-	
+void Gui::message(MessageType mType, std::string text) {
+	TCODColor color;	
 	// make the message a certain color based on its type
 	switch(mType) {
 	case OBSERVE:
@@ -127,24 +137,22 @@ void Gui::message(MessageType mType, const char* text, ...) {
 		color = TCODColor::darkRed;
 		break;
 	}
-	
-	do {
-		// remove oldest message if there's not enough room for new one yet		
-		if(log.size() == MSG_HEIGHT) {
-			Message* toRemove =  log.get(0);
-			log.remove(toRemove);
-			delete toRemove;
-		}
-		
-		// detect end of the line
-		lineEnd = strchr(lineBegin,'\n');
-		if(lineEnd) *lineEnd = '\0';
-		// add a new message to the log
-		Message* msg = new Message(lineBegin, color);
-		log.push(msg);
 
-		lineBegin = lineEnd+1;
-	} while(lineEnd);
+	std::vector<std::string> strings;
+	std::string::size_type pos = 0;
+	std::string::size_type prev = 0;
+	while((pos = text.find('\n', prev)) != std::string::npos) {
+		strings.push_back(text.substr(prev, pos-prev));
+		prev = pos+1;
+	}
+	strings.push_back(text.substr(prev));
+
+	for(std::string str : strings) {
+		// NOTE: if speed becomes a concern, use a faster strategy for this
+		if(log.size() > MSG_HEIGHT) log.erase(log.begin());
+		Message* msg = new Message(str, color);
+		log.push_back(msg);
+	}
 }
 
 Menu::~Menu() {
@@ -152,33 +160,34 @@ Menu::~Menu() {
 }
 
 void Menu::clear() {
-	items.clearAndDelete();
+	items.clear();
 }
 
-void Menu::addItem(MenuItemCode code, const char* label) {
+void Menu::addItem(MenuItemCode code, std::string label) {
    MenuItem* item = new MenuItem();
    item->code = code;
    item->label = label;
-   items.push(item);
+   items.push_back(item);
 }
 
 Menu::MenuItemCode Menu::pick() {
         static TCODImage img("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/images/background.png");
-	static const int BKGND_IMG_SIZE = engine.screenWidth <= engine.screenHeight? engine.screenWidth : engine.screenHeight;
+	static const int BKGND_IMG_SIZE = engine.getScreenWidth() <= engine.getScreenHeight()?
+	        engine.getScreenWidth() : engine.getScreenHeight();
 	
 	int selectedItem = 0;
 	while(!TCODConsole::isWindowClosed()) {
 		img.blitRect(TCODConsole::root, 0, 0, BKGND_IMG_SIZE, BKGND_IMG_SIZE);
 
 		int currentItem = 0;
-		for (MenuItem** iterator = items.begin(); iterator != items.end(); iterator++) {
+		for(MenuItem* item : items) {
 			if(currentItem == selectedItem) {
 				TCODConsole::root->setDefaultForeground(TCODColor::white);
 			} else {
 				TCODConsole::root->setDefaultForeground(TCODColor::lightGrey);
 			}
 		   
-			TCODConsole::root->print(10, 10+currentItem*3, (*iterator)->label);
+			TCODConsole::root->print(10, 10+currentItem*3, item->label.c_str());
 			currentItem++;
 		}
 
@@ -197,7 +206,7 @@ Menu::MenuItemCode Menu::pick() {
 		case TCODK_DOWN: 
 			selectedItem = (selectedItem+1)%items.size(); // wrap around list
 			break;
-		case TCODK_ENTER: return items.get(selectedItem)->code;
+		case TCODK_ENTER: return items.at(selectedItem)->code;
 		default: break;
 		}
 	}

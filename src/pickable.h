@@ -10,13 +10,15 @@ class Pickable {
 
 class Healer: public Pickable {
  public:
-	float amt; // how much health it gives
-
 	Healer(float amt);
 	
 	bool use(Actor* owner, Actor* wearer);
+
+ private:
+	int amt;
 };
 
+/*
 class StyxRifle: public Pickable {
  public:
 	float range, damage;
@@ -34,3 +36,4 @@ class Crossbow: public StyxRifle {
 
 	bool use(Actor* owner, Actor*  wearer);
 };
+*/

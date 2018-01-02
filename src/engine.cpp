@@ -1,8 +1,9 @@
+#include <algorithm>
 #include "main.h"
 
 Engine::Engine(int screenWidth, int screenHeight): 
-	gameStatus(STARTUP), player(NULL), map(NULL), fovRadius(10),
-	screenWidth(screenWidth), screenHeight(screenHeight), level(1), renderMap(true) {
+	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(10), turnCount(0),
+	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
 	// set font 
 	TCODConsole::setCustomFont("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/fonts/dejavu16x16_gs_tc.png", TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
@@ -17,19 +18,20 @@ Engine::~Engine() {
 void Engine::init() {
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(30, 2, "your cadaver");
+	player->destructible = new PlayerDestructible(10, 100, 0.1);
 	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi();
 	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet
-	actors.push(player);
+	actors.push_back(player);
 
 	// the stairs -- even though they begin w/ a location at (0, 0), Map::createRoom will put them somewhere else
 	stairs = new Actor(0, 0, '>', "Stairs", TCODColor::yellow);
 	stairs->blocks = false;
-	actors.push(stairs);
+	actors.push_back(stairs);
 	
 	TCODRandom* rand = TCODRandom::getInstance();
-	map = new Map(rand->getInt(screenWidth, screenWidth*level), rand->getInt(screenHeight, screenHeight*level));
+	map = new Map(rand->getInt(screenWidth, screenWidth*level),
+		      rand->getInt(screenHeight, screenHeight*level));
 	
 	gui->message(Gui::ACTION, "You enter the mouth of the cave, finding yourself in a\n claustrophobic mess of tunnels.");
 	gameStatus = STARTUP;
@@ -52,11 +54,11 @@ void Engine::load() {
 }
   
 void Engine::terminate() {
-	actors.clearAndDelete();
+	actors.clear();
 	if(map) delete map;
 	gui->clear();
 }
-
+ 
 void Engine::update() {
 	if(gameStatus == STARTUP) map->computeFov();
 	gameStatus = IDLE;
@@ -67,10 +69,13 @@ void Engine::update() {
 	TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS|TCOD_EVENT_MOUSE, &lastKey, &mouse);
 	// update actors (except for player)
 	if(gameStatus == NEW_TURN) {
-		for(Actor** iterator = actors.begin(); iterator != actors.end(); iterator++) {
-			Actor* actor = *iterator;
-			if (actor != player) actor->update();
+		turnCount++;
+		for(Actor* actor : actors) {
+			if(actor != player) actor->update();
 		}
+		
+		actors.insert(actors.end(), spawnQueue.begin(), spawnQueue.end());
+		spawnQueue.clear();
 	}
 }
 
@@ -82,8 +87,7 @@ void Engine::render() {
 	TCODConsole::root->clear();
 	if(renderMap) map->render(xshift, yshift);
 
-	for(Actor** iterator = actors.begin(); iterator != actors.end(); iterator++) {
-		Actor* actor = *iterator;
+	for(Actor* actor : actors) {
 		if(map->isInFov(actor->x, actor->y)) {
 			if(renderMap || actor == player) actor->render(xshift, yshift);
 		        gui->render();
@@ -93,16 +97,16 @@ void Engine::render() {
 
 // make an actor be displayed in the background (so others appear to walk on top of it) - useful for corpses
 void Engine::sendToBack(Actor* actor) {
-	actors.remove(actor); // remove from list
-	actors.insertBefore(actor, 0); // push to front of list
+        auto i = std::find(actors.begin(), actors.end(), actor);
+	actors.erase(i);
+	actors.insert(actors.begin(), actor);
 }
 
 Actor* Engine::getClosestMonster(int x, int y, float range) const {
 	Actor* closest = NULL;
 	float bestDist = 1E6f; // starts at impossibly high value
 	
-	for(Actor** iterator = actors.begin(); iterator != actors.end(); iterator++) {
-		Actor* actor = *iterator;
+	for(Actor* actor : actors) {
 		if(actor != player && actor->destructible && !actor->destructible->isDead()) {
 			float dist = actor->getDistance(x, y);
 			if(dist < bestDist && (dist <= range || range == 0.0f)) {
@@ -119,8 +123,8 @@ bool Engine::pickTile(int* x, int* y, float maxRange) {
 	while(!TCODConsole::isWindowClosed()) {
 		render();
 
-		for(int cx = 0; cx < map->width; cx++) {
-			for(int cy = 0; cy < map->height; cy++) {
+		for(int cx = 0; cx < map->getWidth(); cx++) {
+			for(int cy = 0; cy < map->getHeight(); cy++) {
 				// highlight tiles around player
 				if(map->isInFov(cx, cy) && (maxRange == 0 || player->getDistance(cx, cy) <= maxRange)) {
 					TCODColor c = TCODConsole::root->getCharBackground(cx, cy);
@@ -155,21 +159,15 @@ void Engine::nextLevel() {
 	gui->message(Gui::ACTION, "You descend deeper into the dungeons...");
 	// get rid of all the things from previous level
 	delete map;
-	// don't delete player or stairs though
-	for(Actor** iterator = actors.begin(); iterator != actors.end(); iterator++) {
-		if(*iterator != player && *iterator != stairs) {
-			delete *iterator;
-			// update `iterator' so the loop doesn't go crazy 
-			iterator = actors.remove(iterator);
-		}
-	}
-
+	// make sure to keep player and stairs though
+	actors.clear();
+	actors.push_back(player);
+	actors.push_back(stairs);
+	
 	TCODRandom* rand = TCODRandom::getInstance();
-	map = new Map(rand->getInt(screenWidth, screenWidth*level), rand->getInt(screenHeight, screenHeight*level));
+	map = new Map(rand->getInt(screenWidth, screenWidth*level),
+		      rand->getInt(screenHeight, screenHeight*level));
 	
 	gameStatus = STARTUP;
-	// before control yields to Engine::update(), we have to wait for the player to move
-	// this means that the map won't be visible until the player moves, so we need to
-	// just make it visible now
 	map->computeFov();
 }
