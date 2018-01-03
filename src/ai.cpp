@@ -47,9 +47,12 @@ void PlayerAi::update(Actor* owner) {
 	
 	if(action) {
 	        engine.gameStatus = Engine::NEW_TURN;
-		// update FOV if player moved
-		if((dx != 0 || dy != 0) && moveOrAttack(owner, owner->x+dx, owner->y+dy)) {
-		        engine.map->computeFov();
+		// update FOV if player moved; otherwise, regenerate health
+		if(dx != 0 || dy != 0) {
+		        if(moveOrAttack(owner, owner->x+dx, owner->y+dy)) engine.map->computeFov();
+		} else {
+			// if we're not attacking, we can regenerate health
+			if(owner->destructible) owner->destructible->regenerate();
 		}
 	}
 }
@@ -126,9 +129,6 @@ bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 			owner->attacker->attack(owner, actor);
 			// return false since we didn't move
 			return false;
-		} else {
-			// if we're not attacking, we can regenerate health
-			if(owner->destructible) owner->destructible->regenerate();
 		}
 	}
 

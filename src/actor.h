@@ -1,7 +1,7 @@
 // This contains code for the actor class definition
 #include <vector>
 #include <string>
- 
+
 class Actor {	
  public:
 	int x, y;
@@ -14,6 +14,7 @@ class Actor {
 	Pickable* pickable; // something that can be picked and used
 	Container* container; // something that can contain other actors
 	Spreadable* spreadable; // allows actor to spread children around itself (i.e. fire spreading)
+	std::vector<Effect*> effects; // magic effects acting on actor
 	
 	Actor(int x, int y, int ch, std::string name, const TCODColor& color);
 	Actor(const Actor& other);
@@ -28,6 +29,5 @@ class Actor {
 	std::string getName() const { return name; }
 
  private:
-	std::vector<Effect*> effects; // magic effects acting on actor
 	std::string name;
 };

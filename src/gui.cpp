@@ -29,15 +29,23 @@ Gui::Message::~Message() {}
 void Gui::render() {
 	dataConsole->setDefaultBackground(TCODColor::black);
 	dataConsole->clear();
-
+	// print stats
 	dataConsole->setDefaultForeground(TCODColor::white);
 	dataConsole->print(0, 0, "Level %d", engine.getLevel());
 	dataConsole->print(1, 1, "Defense: %d", engine.player->destructible->defense);
 	dataConsole->print(1, 2, "Acc: %d%", engine.player->attacker->accuracy);
 	dataConsole->print(1, 3, "Dmg: %d", engine.player->attacker->power);
 
-	// print the health of actors
-	int hBar_y = 0;
+	// print effects acting on player
+	int bar_y = 0;
+	for(Effect* effect : engine.player->effects) {
+		renderBar(0, 5+bar_y, BAR_WIDTH, effect->getName(),
+			  effect->getDuration(), effect->getStartDuration(),
+			  TCODColor::darkRed, TCODColor::darkestRed);
+		bar_y += 2;
+	}
+
+	// print the health of visible actors
 	// get visible actors and sort them by proximity to player
 	std::vector<Actor*> visibleActors(engine.actors.size());
 	auto it = std::copy_if(engine.actors.begin(), engine.actors.end(), visibleActors.begin(), [](Actor* a) {
@@ -49,13 +57,13 @@ void Gui::render() {
 			return a->getDistance(engine.player->x, engine.player->y)
 				< b->getDistance(engine.player->x, engine.player->y);
 		});
-	// TODO: Fix the bug where the player bar gets duplicated when the level goes up
+
 	for(Actor* actor : visibleActors) {
-		renderBar(0, 5+hBar_y, BAR_WIDTH, actor->getName(),
+		renderBar(0, 5+bar_y, BAR_WIDTH, actor->getName(),
 			  actor->destructible->getHp(), 
 			  actor->destructible->getMaxHp(), 
 			  TCODColor::darkAzure, TCODColor::darkestAzure);
-		hBar_y += 2;
+		bar_y += 2;
 	}
 
 	messageConsole->setDefaultBackground(TCODColor::black);

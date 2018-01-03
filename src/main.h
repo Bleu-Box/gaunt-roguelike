@@ -1,5 +1,4 @@
-// contains most of the #includes the files need
-// TODO: get rid of main.h sometime or another
+// contains most of the #includes the files needed
 #include "lib/libtcod.hpp"
 class Actor;
 class Map;

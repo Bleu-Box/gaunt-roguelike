@@ -1,7 +1,6 @@
 // implementation for Destructibles
 #include "main.h"
 
-// TODO: regeneration and stuff is kind of funky
 Destructible::Destructible(float maxHp, float defense, float regen, const TCODColor& corpseColor):
         defense(defense), maxHp(maxHp), hp(maxHp), regen(regen), corpseColor(corpseColor) {}
 

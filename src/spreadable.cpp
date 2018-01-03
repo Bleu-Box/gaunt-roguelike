@@ -1,7 +1,6 @@
 #include "main.h"
 
 Spreadable::Spreadable(int lifespan): lifespan(lifespan) {}
-
 // spread children from parent
 void Spreadable::spread(Actor* owner) {
 	int numChildren = 0;

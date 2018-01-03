@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <math.h>
 #include "main.h"
- 
+// TODO: prevent multiple inclusion of headers
 Actor::Actor(int x, int y, int ch, std::string name, const TCODColor& color):
 	x(x), y(y), ch(ch), blocks(true), color(color),
 	attacker(NULL), destructible(NULL), ai(NULL), pickable(NULL), container(NULL), spreadable(NULL),

@@ -1,6 +1,6 @@
 #include "main.h"
 
-Effect::Effect(EffectType type, int duration): type(type), duration(duration) {}
+Effect::Effect(EffectType type, int duration): type(type), duration(duration), startDuration(duration) {}
 
 // some things only need to be done once on the target - these go in here
 void Effect::begin(Actor* target) {
@@ -41,5 +41,15 @@ void Effect::end(Actor* target) {
 	} else if(type == CONFUSION) {
 	        engine.gui->message(Gui::ACTION, target->getName() + " is no longer confused.");
 		target->ai->confused = false;
+	}
+}
+
+// returns string version of effect name for printing purposes (i.e. in GUI)
+std::string Effect::getName() const {
+        switch(type) {
+	case POISON: return "Poison";
+	case BLINDNESS: return "Blindness";
+	case CONFUSION: return "Confusion";
+	default: return "Effect";
 	}
 }
