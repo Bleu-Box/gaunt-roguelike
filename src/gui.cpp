@@ -31,10 +31,10 @@ void Gui::render() {
 	dataConsole->clear();
 	// print stats
 	dataConsole->setDefaultForeground(TCODColor::white);
-	dataConsole->print(0, 0, "Level %d", engine.getLevel());
-	dataConsole->print(1, 1, "Defense: %d", engine.player->destructible->defense);
-	dataConsole->print(1, 2, "Acc: %d%", engine.player->attacker->accuracy);
-	dataConsole->print(1, 3, "Dmg: %d", engine.player->attacker->power);
+	dataConsole->print(0, 0, "Level %i", engine.getLevel());
+	dataConsole->print(1, 1, "Defense: %.1f", engine.player->destructible->getDefense());
+	dataConsole->print(1, 2, "Acc: %.1f", engine.player->attacker->getAccuracy());
+	dataConsole->print(1, 3, "Dmg: %.1f", engine.player->attacker->getPower());
 
 	// print effects acting on player
 	int bar_y = 0;

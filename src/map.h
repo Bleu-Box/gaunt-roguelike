@@ -1,4 +1,6 @@
 // definition for Map
+#ifndef MAP_H
+#define MAP_H
 
 // structs are better for data-only classes and have public access by default
 struct Tile {
@@ -50,3 +52,4 @@ class BspListener: public ITCODBspCallback {
 	int lastx, lasty; // center coords of last room
 };
 
+#endif

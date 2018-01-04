@@ -23,7 +23,7 @@ void Effect::update(Actor* target) {
 			if(target->destructible) {
 				// poison damages actors proportional to their health and defense
 				target->destructible->takeDamage(target,
-								 target->destructible->getMaxHp()*0.01+target->destructible->defense);
+								 target->destructible->getMaxHp()*0.01+target->destructible->getDefense());
 			}
 		}
 		

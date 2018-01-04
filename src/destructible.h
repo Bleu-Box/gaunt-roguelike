@@ -1,9 +1,9 @@
 // this is the class for things that can be destroyed/hurt
+#ifndef DESTRUCTIBLE_H
+#define DESTRUCTIBLE_H
 
 class Destructible {
  public:
-        float defense; // hit points deflected
-
 	Destructible(float maxHp, float defense, float regen, const TCODColor& corpseColor=TCODColor::darkRed);
 	virtual ~Destructible() {}
 	
@@ -14,8 +14,11 @@ class Destructible {
 	int getMaxHp() const { return maxHp; }
 	int getHp() const { return hp; }
 	void regenerate();
+        float getDefense() const { return defense; }
+        void setDefense(float val) { if(val >= 0) defense = val; }
 
  protected:
+	float defense; // hit points deflected
 	float maxHp;
 	float hp;
 	float regen;
@@ -37,3 +40,5 @@ class PlayerDestructible: public Destructible {
 	
 	void die(Actor* owner);
 };
+
+#endif

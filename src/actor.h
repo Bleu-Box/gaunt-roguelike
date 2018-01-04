@@ -1,4 +1,7 @@
 // This contains code for the actor class definition
+#ifndef ACTOR_H
+#define ACTOR_H
+
 #include <vector>
 #include <string>
 
@@ -31,3 +34,5 @@ class Actor {
  private:
 	std::string name;
 };
+
+#endif

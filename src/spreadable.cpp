@@ -1,4 +1,6 @@
 #include "main.h"
+#include <iostream> // TODO: REMOVE
+#include <functional> // TODO: perhaps remove
 
 Spreadable::Spreadable(int lifespan): lifespan(lifespan) {}
 // spread children from parent
@@ -16,7 +18,7 @@ void Spreadable::spread(Actor* owner) {
 	if(owner->spreadable) owner->spreadable->lifespan--;
 
 	if(numChildren > 0) {
-		engine.gui->message(Gui::OBSERVE, std::to_string(numChildren) + " more slimes appear!");
+		engine.gui->message(Gui::OBSERVE, "More slimes appear!");
 	}
 }
 
@@ -24,14 +26,17 @@ void Spreadable::spread(Actor* owner) {
 void Spreadable::addActor(Actor* owner, int x, int y) {
 	if(lifespan > 0) {
 		// configure child 
-		// TODO: childrens' spreadables don't spread
-		// it looks like the spread predicates don't get copied
 		Actor* a = new Actor(*owner);
 		a->x = x;
 		a->y = y;
 		a->color = a->color*0.8;
 		if(a->spreadable) a->spreadable->lifespan--;
-		if(a->destructible) a->destructible->heal(a->destructible->getMaxHp());	
+		if(a->destructible) a->destructible->heal(a->destructible->getMaxHp());
+		if(a->ai) {
+			MonsterAi* aai = dynamic_cast<MonsterAi*>(a->ai);
+			MonsterAi* oai = dynamic_cast<MonsterAi*>(owner->ai);
+		        aai->spreadPredicate = oai->spreadPredicate;//[](const Actor& _) { return true; };
+		}
 		
 	        engine.spawnActor(a);
 	}

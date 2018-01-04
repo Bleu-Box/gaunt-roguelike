@@ -1,4 +1,7 @@
 // contains most of the #includes the files needed
+#ifndef MAIN_H
+#define MAIN_H
+
 #include "lib/libtcod.hpp"
 class Actor;
 class Map;
@@ -14,3 +17,5 @@ class Gui;
 #include "actor.h"
 #include "map.h"
 #include "gui.h"
+
+#endif

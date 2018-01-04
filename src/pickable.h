@@ -1,4 +1,7 @@
 // the class for things that can be collected
+#ifndef PICKABLE_H
+#define PICKABLE_H
+
 class Pickable {
  public:
 	virtual ~Pickable() {};
@@ -37,3 +40,5 @@ class Crossbow: public StyxRifle {
 	bool use(Actor* owner, Actor*  wearer);
 };
 */
+
+#endif

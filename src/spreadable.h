@@ -1,4 +1,6 @@
 // the Spreadable class - for things that spread (like fire and gas)
+#ifndef SPREADABLE_H
+#define SPREADABLE_H
 
 class Spreadable {
  public:
@@ -11,3 +13,5 @@ class Spreadable {
  private:
 	void addActor(Actor* owner, int x, int y);
 };
+
+#endif

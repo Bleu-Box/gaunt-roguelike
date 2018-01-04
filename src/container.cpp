@@ -3,20 +3,8 @@
 
 Container::Container(int size): size(size) {}
 
-Container::Container(const Container& other) {
-        inventory = other.inventory;
-        size = other.getSize();
-}
-
 Container::~Container() {
 	inventory.clear();
-}
-
-Container& Container::operator=(const Container& rhs) {
-	Container temp(rhs);
-	std::swap(inventory, temp.inventory);
-	std::swap(size, temp.size);
-	return *this;
 }
 
 // check if container isn't full
@@ -28,6 +16,9 @@ bool Container::add(Actor* actor) {
 }
 
 void Container::remove(Actor* actor) {
-	auto it = std::remove(inventory.begin(), inventory.end(), actor);
-	inventory.erase(it, inventory.end());
+	std::vector<Actor*> newInventory;
+	for(Actor* a : inventory) {
+		if(a != actor) newInventory.push_back(a);
+	}
+	inventory = newInventory;
 }

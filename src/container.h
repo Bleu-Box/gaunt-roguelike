@@ -1,3 +1,6 @@
+#ifndef CONTAINER_H
+#define CONTAINER_H
+
 #include <vector>
 
 class Container {
@@ -5,10 +8,8 @@ class Container {
 	std::vector<Actor*> inventory;
 
 	Container(int size);
-	Container(const Container& other);
 	~Container();
 
-	Container& operator=(const Container& rhs);
 	bool add(Actor* actor);
 	void remove(Actor* actor);
 	int getSize() const { return size; }
@@ -16,3 +17,5 @@ class Container {
  private:
 	int size;
 };
+
+#endif

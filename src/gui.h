@@ -1,4 +1,7 @@
 // the game's GUI
+#ifndef GUI_H
+#define GUI_H
+
 #include <vector>
 #include <string>
 
@@ -55,3 +58,5 @@ class Gui {
 
 	void renderMouseLook();
 };
+
+#endif

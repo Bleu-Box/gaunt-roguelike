@@ -1,3 +1,6 @@
+#ifndef AI_H
+#define AI_H
+
 #include <functional>
 
 class Ai {
@@ -37,3 +40,5 @@ class MonsterAi: public Ai {
 	
 	void moveOrAttack(Actor* owner, int targetx, int targety);
 };
+
+#endif

@@ -1,7 +1,8 @@
 #include <cassert>
 #include "main.h"
 
-Attacker::Attacker(float power, int accuracy, std::string action): power(power), accuracy(accuracy), action(action), enchanted(false) {
+Attacker::Attacker(float power, float accuracy, std::string action): power(power), accuracy(accuracy), action(action),
+								     enchanted(false) {
 	// accuracy must be in range [0..100]
 	assert(accuracy >= 0 && accuracy <= 100);
 }
@@ -21,9 +22,11 @@ void Attacker::attack(Actor* owner, Actor* target) {
 			        target->addEffect(new Effect(effectType, effectDuration));
 			}
 			
-			if(power-target->destructible->defense > 0) {
-				engine.gui->message(Gui::ATTACK, owner->getName() + " " + action + " " + target->getName() +
-						    ", inflicting " + std::to_string((int) (power-target->destructible->defense)) + " damage.");
+			if(power-target->destructible->getDefense() > 0) {
+				engine.gui->message(Gui::ATTACK, owner->getName() + " " + action + " " + target->getName()
+						    + ", inflicting " +
+						    std::to_string((int) (power-target->destructible->getDefense()))
+						    + " damage.");
 			} else { 
 			        engine.gui->message(Gui::ATTACK, owner->getName() + " " + action +
 						    " " + target->getName() + ", but it has no effect!");            

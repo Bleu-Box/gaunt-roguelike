@@ -1,5 +1,8 @@
-#include <string>
 // this is the class for potion/magic effects
+#ifndef EFFECT_H
+#define EFFECT_H
+
+#include <string>
 
 class Effect {
  public:
@@ -22,3 +25,5 @@ class Effect {
 	 // effects often need to save information about the target to go back to when they wear off
 	Actor* savedState;
 };
+
+#endif

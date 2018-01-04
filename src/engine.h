@@ -1,4 +1,7 @@
 // the Engine handles the game - it's more convenient than putting everything in main()
+#ifndef ENGINE_H
+#define ENGINE_H
+
 #include <vector>
 
 class Engine {
@@ -51,3 +54,5 @@ class Engine {
 };
 
 extern Engine engine;
+
+#endif

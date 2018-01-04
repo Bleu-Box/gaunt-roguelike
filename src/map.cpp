@@ -86,14 +86,14 @@ void Map::addMonster(int x, int y) {
 		shroom->attacker = new Attacker(3, 20, "thumps");
 		// get random effect
 		Effect::EffectType types[1] = {Effect::POISON};		
-		shroom->attacker->setEffect(types[rand->getInt(0, 0)], rand->getInt(2, 20));
+		shroom->attacker->setEffect(types[rand->getInt(0, 0)], rand->getInt(2, 10));
 		shroom->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass);
 		shroom->ai = new MonsterAi(1);
 		engine.actors.push_back(shroom);
 	} else if(choice < 95) {
 		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::green);
 		slime->attacker = new Attacker(3, 10, "smudges");
-		slime->spreadable = new Spreadable(4);
+		slime->spreadable = new Spreadable(2);
 		slime->destructible = new MonsterDestructible(5, 3, 0, TCODColor::green);
 		slime->ai = new MonsterAi(1);
 		MonsterAi* mai = dynamic_cast<MonsterAi*>(slime->ai);
