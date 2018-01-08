@@ -138,7 +138,6 @@ bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 	return true;
 }
 
-// TODO: using things doesn't clear their names from inventory (but it does remove them from container)
 Actor* PlayerAi::getFromInventory(Actor* owner) {
 	// static variables only need to be made the first time they're needed
 	static const int INV_WIDTH = 28;

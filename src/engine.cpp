@@ -18,7 +18,7 @@ Engine::~Engine() {
 void Engine::init() {
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(10, 100, 0.1);
+	player->destructible = new PlayerDestructible(20, 10, 0.5);
 	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi();
 	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet
@@ -29,9 +29,7 @@ void Engine::init() {
 	stairs->blocks = false;
 	actors.push_back(stairs);
 	
-	TCODRandom* rand = TCODRandom::getInstance();
-	map = new Map(rand->getInt(screenWidth, screenWidth*level),
-		      rand->getInt(screenHeight, screenHeight*level));
+	map = new Map(screenWidth, screenHeight);
 	
 	gui->message(Gui::ACTION, "You enter the mouth of the cave, finding yourself in a\n claustrophobic mess of tunnels.");
 	gameStatus = STARTUP;
@@ -73,7 +71,11 @@ void Engine::update() {
 		for(Actor* actor : actors) {
 			if(actor != player) actor->update();
 		}
-		
+
+		actors.erase(std::remove_if(actors.begin(), actors.end(),
+					    [](Actor* a) {
+						    return a->destructible && a->destructible->isDead();
+					    }), actors.end());
 		actors.insert(actors.end(), spawnQueue.begin(), spawnQueue.end());
 		spawnQueue.clear();
 	}
@@ -164,9 +166,7 @@ void Engine::nextLevel() {
 	actors.push_back(player);
 	actors.push_back(stairs);
 	
-	TCODRandom* rand = TCODRandom::getInstance();
-	map = new Map(rand->getInt(screenWidth, screenWidth*level),
-		      rand->getInt(screenHeight, screenHeight*level));
+	map = new Map(screenWidth, screenHeight);
 	
 	gameStatus = STARTUP;
 	map->computeFov();

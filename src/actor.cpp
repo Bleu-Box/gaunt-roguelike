@@ -7,7 +7,7 @@ Actor::Actor(int x, int y, int ch, std::string name, const TCODColor& color):
 	x(x), y(y), ch(ch), blocks(true), color(color),
 	attacker(NULL), destructible(NULL), ai(NULL), pickable(NULL), container(NULL), spreadable(NULL),
         name(name) {}
-  
+
 Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(other.blocks),
 				  color(other.color), name(other.getName()) {
 	if(other.attacker) {
