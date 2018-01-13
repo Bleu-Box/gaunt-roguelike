@@ -17,7 +17,7 @@ void Spreadable::spread(Actor* owner) {
 	if(owner->spreadable) owner->spreadable->lifespan--;
 
 	if(numChildren > 0) {
-		engine.gui->message(Gui::OBSERVE, "More slimes appear!");
+		engine.gui->message(Gui::ACTION, "More slimes appear!");
 	}
 }
 

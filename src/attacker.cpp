@@ -18,33 +18,31 @@ void Attacker::attack(Actor* owner, Actor* target) {
 	
 	if(target->destructible && !target->destructible->isDead()) {
 		if(rand->getInt(0, 100) <= accuracy) {
+			float dmg = target->destructible->takeDamage(target, power);
 		        if(enchanted) {
 			        target->addEffect(new Effect(effectType, effectDuration));
 			}
 			
-			if(power-target->destructible->getDefense() > 0) {
+			if(dmg > 0.0) {
 				engine.gui->message(Gui::ATTACK, owner->getName() + " " + action + " " + target->getName()
 						    + ", inflicting " +
-						    std::to_string((int) (power-target->destructible->getDefense()))
+						    std::to_string(dmg)
 						    + " damage.");
 				// put blood splatters everywhere
 				for(int i = -1; i < 2; i++) {
 					for(int j = 0; j < 2; j++) {
-						if(engine.map->getTile(target->x+i, target->y+j).ch == FLOOR_TILE.ch
-						   && rand->getInt(0, 100) < 40) {
-							engine.map->setTileForeground(target->x+i, target->y+j,
-									       target->destructible->getCorpseColor()*0.5);
+						if(rand->getInt(0, 100) < 40) {
+							engine.map->addBloodstain(target->x+i, target->y+j,
+										  target->destructible->getCorpseColor()*0.5);
 						}
 					}
 				}
-			} else { 
+			} else {
 			        engine.gui->message(Gui::ATTACK, owner->getName() + " " + action +
 						    " " + target->getName() + ", but it has no effect!");            
 			}
 		} else {
 		        engine.gui->message(Gui::OBSERVE, owner->getName() + " misses " + target->getName() + ".");
-		}
-		
-		target->destructible->takeDamage(target, power);		
+		}		
 	} 
 }

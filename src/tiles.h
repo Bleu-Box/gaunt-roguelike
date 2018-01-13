@@ -10,13 +10,18 @@ struct Tile {
 	int ch;
 	TCODColor fgColor;
 	TCODColor bgColor;
+	
 	Tile(int ch, bool transparent, bool walkable,
 	     const TCODColor& fgColor=TCODColor::white, const TCODColor& bgColor=TCODColor::black);
+
+	bool operator==(const Tile& rhs) const;
+	bool operator!=(const Tile& rhs) const;
 };
 
 const Tile FLOOR_TILE = Tile('.', true, true, TCODColor::lightGrey);
 const Tile WALL_TILE = Tile('.', false, false, TCODColor::lightGrey);
 const Tile WATER_TILE = Tile('~', true, true, TCODColor::blue, TCODColor::darkBlue);
-const Tile GRASS_TILE = Tile('\'', true, true, TCODColor::desaturatedGreen);
+const Tile GRASS_TILE = Tile('"', true, true, TCODColor::desaturatedChartreuse);
+const Tile HEROESBANE_TILE = Tile('"', true, true, TCODColor::copper); // spawns redcaps on contact with blood
 
 #endif

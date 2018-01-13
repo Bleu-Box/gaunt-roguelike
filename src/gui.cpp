@@ -1,6 +1,6 @@
 #include <algorithm>
 #include "main.h"
-
+// TODO: fix message delay
 static const int PANEL_HEIGHT = 7;
 static const int BAR_WIDTH = 15;
 static const int MSG_X = 1;

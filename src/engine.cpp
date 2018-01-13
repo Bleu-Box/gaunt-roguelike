@@ -18,7 +18,7 @@ Engine::~Engine() {
 void Engine::init() {
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(10000, 100, 100); // top 10 most ridiculously overpowered anime characters
+	player->destructible = new PlayerDestructible(25, 20, 0.5);
 	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi(2);
 	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet

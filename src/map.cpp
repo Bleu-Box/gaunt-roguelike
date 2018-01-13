@@ -2,17 +2,9 @@
 #include <vector>
 #include "main.h"
 
-static const int MIN_ITEMS = 1;
-static const int MAX_ITEMS = 10;
-
 static const int MIN_HORDES = 8;
 static const int MAX_HORDES = 25;
 static const int HORDE_SIZE = 3;
-
-static const int MIN_PUDDLES = 0;
-static const int MAX_PUDDLES = 15;
-static const int MIN_PUDDLE_SIZE = 10;
-static const int MAX_PUDDLE_SIZE = 25;
 
 Map::Map(int width, int height): width(width), height(height) {
 	tiles = new Tile*[width*height];
@@ -28,6 +20,24 @@ Map::~Map() {
 
 // generate map, add monsters, etc.
 void Map::init() {
+	static const int MIN_ITEMS = 1;
+	static const int MAX_ITEMS = 10;
+
+	static const int MIN_PUDDLES = 0;
+	static const int MAX_PUDDLES = 15;
+	static const int MIN_PUDDLE_SIZE = 10;
+	static const int MAX_PUDDLE_SIZE = 25;
+
+	static const int MIN_GRASSFIELDS = 0;
+	static const int MAX_GRASSFIELDS = 15;
+	static const int MIN_GRASSFIELD_SIZE = 5;
+	static const int MAX_GRASSFIELD_SIZE = 10;
+
+	static const int MIN_BANEFIELDS = 0;
+	static const int MAX_BANEFIELDS = 5;
+	static const int MIN_BANEFIELD_SIZE = 3;
+	static const int MAX_BANEFIELD_SIZE = 8;
+	
 	TCODRandom* rand = TCODRandom::getInstance();
 
 	// remake map until the playable area is big enough
@@ -53,6 +63,30 @@ void Map::init() {
 		spreadTile(x, y, rand->getInt(MIN_PUDDLE_SIZE, MAX_PUDDLE_SIZE), WATER_TILE);
 	}
 
+	if(engine.getLevel() <= 2) {
+		// create grass fields
+		for(int i = 0; i < rand->getInt(MIN_GRASSFIELDS, MAX_GRASSFIELDS); i++) {
+			int x, y;
+			do {
+				x = rand->getInt(0, width);
+				y = rand->getInt(0, height);
+			} while(!canWalk(x, y));
+			spreadTile(x, y, rand->getInt(MIN_GRASSFIELD_SIZE, MAX_GRASSFIELD_SIZE), GRASS_TILE);
+		}
+	}
+	
+	if(engine.getLevel() >= 4) {
+		// create heroes' bane fields
+		for(int i = 0; i < rand->getInt(MIN_BANEFIELDS, MAX_BANEFIELDS); i++) {
+			int x, y;
+			do {
+				x = rand->getInt(0, width);
+				y = rand->getInt(0, height);
+			} while(!canWalk(x, y));
+			spreadTile(x, y, rand->getInt(MIN_BANEFIELD_SIZE, MAX_BANEFIELD_SIZE), HEROESBANE_TILE);
+		}
+	}
+	
 	// place player and stairs
 	place(engine.player);
 	place(engine.stairs);
@@ -116,6 +150,7 @@ void Map::generateMap() {
 }
 
 // count number of neighboring tiles with given char
+// TODO: compare tiles rather than chars (without making the game freeze)
 int Map::nbs(int x, int y, int ch) const {
 	int count = 0;
 	
@@ -176,6 +211,12 @@ bool Map::isWall(int x, int y) const {
 	return !map->isWalkable(x, y);
 }
 
+// used in spawning most initial actors -- actors should only spawn on clean floor
+// unless they're added during the level or they're aquatic or something
+bool Map::isFloor(int x, int y) const {
+	return *tiles[x+y*width] == FLOOR_TILE;
+}
+
 bool Map::canWalk(int x, int y) const  {
 	if(isWall(x, y)) return false;
 	
@@ -192,6 +233,24 @@ void Map::setTileForeground(int x, int y, const TCODColor& color) {
 
 void Map::setTileBackground(int x, int y, const TCODColor& color) {
 	tiles[x+y*width]->bgColor = color;
+}
+
+// adding a bloodstain to heroes' bane will spawn redcaps
+// heroes' bane is good for one spawn and then it's done
+void Map::addBloodstain(int x, int y, const TCODColor& color) {
+	Tile* tile = tiles[x+y*width];	
+	if(*tile == HEROESBANE_TILE) {
+		spawnMonster(x, y, REDCAP);
+		engine.gui->message(Gui::ACTION, "Your blood soaks the heroes\' bane. A redcap appears! ");
+		*tile = FLOOR_TILE;
+	}
+	
+	if(*tile == WATER_TILE) {
+		tile->bgColor = color*0.8;
+		tile->fgColor = color;
+	} else {
+		tile->fgColor = color;
+	}
 }
 
 bool Map::isExplored(int x, int y) const {
@@ -240,45 +299,6 @@ void Map::addItem(int x, int y) {
 		healthPotion->pickable = new Healer(5);
 		engine.actors.push_back(healthPotion);
 		engine.sendToBack(healthPotion);
-	}
-}
-
-void Map::addMonster(int x, int y) {
-	TCODRandom* rand = TCODRandom::getInstance();
-	int choice = rand->getInt(0, 100);
-	   
-	if(choice < 50) {
-		Actor* rat = new Actor(x, y, 'r', "Rat", TCODColor::lightGrey);
-		rat->attacker = new Attacker(3, 30, "bites");
-		rat->destructible = new MonsterDestructible(10, 1, 0);
-		rat->ai = new MonsterAi(2, 10);
-		engine.actors.push_back(rat);
-	} else if(choice < 90) {
-		Actor* shroom = new Actor(x, y, 'm', "Mushroom", TCODColor::brass);
-		shroom->attacker = new Attacker(3, 20, "thumps");	
-		shroom->attacker->setEffect(Effect::POISON, rand->getInt(2, 10));
-		shroom->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass);
-		shroom->ai = new MonsterAi(1, 4);
-		engine.actors.push_back(shroom);
-	} else if(choice < 95) {
-		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::green);
-		slime->attacker = new Attacker(3, 10, "smudges");
-		slime->spreadable = new Spreadable(1);
-		slime->destructible = new MonsterDestructible(5, 3, 0, TCODColor::green);
-		slime->ai = new MonsterAi(1, 3);
-		MonsterAi* mai = dynamic_cast<MonsterAi*>(slime->ai);
-		mai->spreadPredicate = [](const Actor& self)->bool {
-			return self.destructible->getHp() < self.destructible->getMaxHp();
-		};		
-		engine.actors.push_back(slime);
-	} else {
-		Actor* redcap = new Actor(x, y, 'R', "Redcap", TCODColor::darkerRed);
-		redcap->attacker = new Attacker(4, 80, "clubs");
-		Effect::EffectType types[2] = {Effect::POISON, Effect::BLINDNESS};
-		redcap->attacker->setEffect(types[rand->getInt(0, 1)], rand->getInt(25, 100));
-		redcap->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass);
-		redcap->ai = new MonsterAi(1, 5);
-		engine.actors.push_back(redcap);
 	}
 }
 
@@ -344,7 +364,8 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	candidates.push_back(RAT);
 	if(level >= 2) candidates.push_back(MUSHROOM);
 	if(level >= 3) candidates.push_back(SLIME);
-	if(level >= 4) candidates.push_back(REDCAP);
+	// redcaps are rare
+	if(level >= 4 && rand->getInt(0, 100) < 20) candidates.push_back(REDCAP);
 
 	return candidates[rand->getInt(0, candidates.size()-1)];
 }
@@ -373,10 +394,10 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 	}
 	
 	case SLIME: {
-		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::green);
+		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::desaturatedGreen);
 		slime->attacker = new Attacker(3, 10, "smudges");
 		slime->spreadable = new Spreadable(1);
-		slime->destructible = new MonsterDestructible(5, 3, 0, TCODColor::green);
+		slime->destructible = new MonsterDestructible(5, 3, 0, TCODColor::desaturatedYellow);
 		slime->ai = new MonsterAi(1, 3);
 		MonsterAi* mai = dynamic_cast<MonsterAi*>(slime->ai);
 		mai->spreadPredicate = [](const Actor& self)->bool {
@@ -415,4 +436,3 @@ void Map::spawnHorde(int x, int y) {
 		}
 	}
 }
-

@@ -16,8 +16,7 @@ float Destructible::takeDamage(Actor* owner, float damage) {
 
 void Destructible::die(Actor* owner) {
 	// put a corpse on the map (the engine will clean up dead actors)
-	if(engine.map->getTile(owner->x, owner->y).ch == FLOOR_TILE.ch) 
-		engine.map->setTileForeground(owner->x, owner->y, corpseColor);
+	engine.map->addBloodstain(owner->x, owner->y, corpseColor);
 }
 
 float Destructible::heal(float amt) {
