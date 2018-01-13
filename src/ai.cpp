@@ -6,7 +6,7 @@ static const int TRACKING_TURNS = 5; // how long monster follows player
 
 Ai::Ai(int speed): confused(false), speed(speed) {}
   
-PlayerAi::PlayerAi(): Ai(1) {}
+PlayerAi::PlayerAi(int stealth): Ai(1), stealth(stealth) {}
 
 void PlayerAi::update(Actor* owner) {
 	// don't do anything if owner is dead
@@ -176,13 +176,13 @@ Actor* PlayerAi::getFromInventory(Actor* owner) {
 	return NULL;
 }
 
-MonsterAi::MonsterAi(int speed): Ai(speed) {}
+MonsterAi::MonsterAi(int speed, int range): Ai(speed), range(range) {}
 
 void MonsterAi::update(Actor* owner) {	
 	// don't do anything if owner is dead
 	if(owner->destructible && owner->destructible->isDead()) return;
 	// otherwise, move towards the player or attack it (if it's visible to the owner)
-	if(engine.map->isInFov(owner->x,owner->y)) {
+	if(owner->getDistance(engine.player->x, engine.player->y) <= range+dynamic_cast<PlayerAi*>(engine.player->ai)->stealth) {
 		// we know where the player is, so we can stop blindly following it and restore tracking turns
 		moveCount = TRACKING_TURNS;
 	} else {

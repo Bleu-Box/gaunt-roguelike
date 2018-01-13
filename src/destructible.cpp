@@ -6,9 +6,6 @@ Destructible::Destructible(float maxHp, float defense, float regen, const TCODCo
 
 // take damage and die if needed
 float Destructible::takeDamage(Actor* owner, float damage) {
-	// add a bloodstain
-	engine.map->setTileForeground(owner->x, owner->y, corpseColor*0.5);
-		
 	if(defense != 0) damage /= defense;
 
 	hp -= damage;
@@ -19,7 +16,8 @@ float Destructible::takeDamage(Actor* owner, float damage) {
 
 void Destructible::die(Actor* owner) {
 	// put a corpse on the map (the engine will clean up dead actors)
-	engine.map->setTileForeground(owner->x, owner->y, corpseColor);
+	if(engine.map->getTile(owner->x, owner->y).ch == FLOOR_TILE.ch) 
+		engine.map->setTileForeground(owner->x, owner->y, corpseColor);
 }
 
 float Destructible::heal(float amt) {

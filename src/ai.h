@@ -18,7 +18,9 @@ class Ai {
 
 class PlayerAi: public Ai {
  public:
-	PlayerAi();
+	int stealth;
+	
+	PlayerAi(int stealth);
 	
 	void update(Actor* owner);
 	
@@ -29,8 +31,10 @@ class PlayerAi: public Ai {
 };
 
 class MonsterAi: public Ai {
- public:	
-	MonsterAi(int speed);
+ public:
+	int range;
+	
+	MonsterAi(int speed, int range);
 	
 	void update(Actor* owner);
 	std::function<bool(const Actor&)> spreadPredicate; // this decides whether or not owner will spread	

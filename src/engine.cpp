@@ -18,9 +18,9 @@ Engine::~Engine() {
 void Engine::init() {
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(20, 10, 0.5);
+	player->destructible = new PlayerDestructible(10000, 100, 100); // top 10 most ridiculously overpowered anime characters
 	player->attacker = new Attacker(5, 50, "whacks");
-	player->ai = new PlayerAi();
+	player->ai = new PlayerAi(2);
 	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet
 	actors.push_back(player);
 
@@ -31,7 +31,7 @@ void Engine::init() {
 	
 	map = new Map(screenWidth, screenHeight);
 	
-	gui->message(Gui::ACTION, "You enter the mouth of the cave, finding yourself in a\n claustrophobic mess of tunnels.");
+	gui->message(Gui::ACTION, "As you venture into the tunnel, darkness meets your eyes.");
 	gameStatus = STARTUP;
 }
 

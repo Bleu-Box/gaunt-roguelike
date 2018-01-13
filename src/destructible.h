@@ -16,6 +16,7 @@ class Destructible {
 	void regenerate();
         float getDefense() const { return defense; }
         void setDefense(float val) { if(val >= 0) defense = val; }
+	TCODColor getCorpseColor() const { return corpseColor; }
 
  protected:
 	float defense; // hit points deflected

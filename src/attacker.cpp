@@ -27,6 +27,16 @@ void Attacker::attack(Actor* owner, Actor* target) {
 						    + ", inflicting " +
 						    std::to_string((int) (power-target->destructible->getDefense()))
 						    + " damage.");
+				// put blood splatters everywhere
+				for(int i = -1; i < 2; i++) {
+					for(int j = 0; j < 2; j++) {
+						if(engine.map->getTile(target->x+i, target->y+j).ch == FLOOR_TILE.ch
+						   && rand->getInt(0, 100) < 40) {
+							engine.map->setTileForeground(target->x+i, target->y+j,
+									       target->destructible->getCorpseColor()*0.5);
+						}
+					}
+				}
 			} else { 
 			        engine.gui->message(Gui::ATTACK, owner->getName() + " " + action +
 						    " " + target->getName() + ", but it has no effect!");            

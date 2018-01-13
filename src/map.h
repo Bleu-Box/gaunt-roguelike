@@ -2,17 +2,10 @@
 #ifndef MAP_H
 #define MAP_H
 
-struct Tile {
-	bool visited; // used in flood fill
-	bool explored;
-	int ch;
-	TCODColor fgColor;
-	TCODColor bgColor;
-	Tile(int ch, const TCODColor& fgColor=TCODColor::white, const TCODColor& bgColor=TCODColor::black);
-};
-
 class Map {
- public:	
+ public:
+	enum MonsterKind {RAT, MUSHROOM, SLIME, REDCAP};
+	
         Map(int width, int height);
         ~Map();
 
@@ -27,6 +20,8 @@ class Map {
 	void shift(int x, int y); // shift tiles a certain amount
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
+	void setTile(int x, int y, const Tile& tile);
+	Tile getTile(int x, int y) const;
 	
  private:
 	Tile** tiles;
@@ -34,14 +29,18 @@ class Map {
 	int width, height;
 
 	void init();
+	void spreadTile(int x, int y, int count, const Tile& tile);
 	float getWalkableCoverage();
         void addMonster(int x, int y);
         void addItem(int x, int y);
 	void generateMap();
-	int nbs(int x, int y) const;
+	int nbs(int x, int y, int ch) const;
 	void floodFill(int x, int y);
         void removeDisjointRooms();
 	void place(Actor* actor);
+	MonsterKind chooseMonsterKind();
+	void spawnMonster(int x, int y, MonsterKind kind);
+	void spawnHorde(int x, int y);
 };
 
 #endif

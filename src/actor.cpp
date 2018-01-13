@@ -21,7 +21,7 @@ Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(o
 	}
 
 	if(other.ai) {
-		ai = new MonsterAi(0);
+		ai = new MonsterAi(0, 0);
 		*ai = *other.ai;
 	}
 
@@ -29,12 +29,7 @@ Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(o
 		pickable = new Pickable();
 		*pickable = *other.pickable;
 	}
-	/*
-	if(other.container) {
-		container = new Container(0);
-		*container = *other.container;
-	}
-	*/
+	
 	if(other.spreadable) {
 		spreadable = new Spreadable(0);
 		*spreadable = *other.spreadable;
