@@ -1,5 +1,6 @@
 // implementation for Map
 #include <vector>
+#include <algorithm>
 #include "main.h"
 
 static const int MIN_HORDES = 8;
@@ -8,6 +9,7 @@ static const int HORDE_SIZE = 3;
 
 Map::Map(int width, int height): width(width), height(height) {
 	tiles = new Tile*[width*height];
+	regions = new int[width*height];
 	map = new TCODMap(width, height);
 
 	init();
@@ -15,142 +17,115 @@ Map::Map(int width, int height): width(width), height(height) {
 
 Map::~Map() {
 	delete[] tiles;
+        rooms.clear();
 	delete map;
 }
 
 // generate map, add monsters, etc.
 void Map::init() {
-	static const int MIN_ITEMS = 1;
-	static const int MAX_ITEMS = 10;
-
-	static const int MIN_PUDDLES = 0;
-	static const int MAX_PUDDLES = 15;
-	static const int MIN_PUDDLE_SIZE = 10;
-	static const int MAX_PUDDLE_SIZE = 25;
-
-	static const int MIN_GRASSFIELDS = 0;
-	static const int MAX_GRASSFIELDS = 15;
-	static const int MIN_GRASSFIELD_SIZE = 5;
-	static const int MAX_GRASSFIELD_SIZE = 10;
-
-	static const int MIN_BANEFIELDS = 0;
-	static const int MAX_BANEFIELDS = 5;
-	static const int MIN_BANEFIELD_SIZE = 3;
-	static const int MAX_BANEFIELD_SIZE = 8;
-	
 	TCODRandom* rand = TCODRandom::getInstance();
-
-	// remake map until the playable area is big enough
-	do {
-		generateMap();
-		int floodX, floodY;
-		do {
-			floodX = rand->getInt(0, width);
-			floodY = rand->getInt(0, height);
-		} while(!canWalk(floodX, floodY));
-	
-		floodFill(floodX, floodY);
-		removeDisjointRooms();
-	} while(getWalkableCoverage() < 0.38);
-
-	// create puddles
-	for(int i = 0; i < rand->getInt(MIN_PUDDLES, MAX_PUDDLES); i++) {
-		int x, y;
-		do {
-			x = rand->getInt(0, width);
-			y = rand->getInt(0, height);
-		} while(!canWalk(x, y));
-		spreadTile(x, y, rand->getInt(MIN_PUDDLE_SIZE, MAX_PUDDLE_SIZE), WATER_TILE);
-	}
-
-	if(engine.getLevel() <= 2) {
-		// create grass fields
-		for(int i = 0; i < rand->getInt(MIN_GRASSFIELDS, MAX_GRASSFIELDS); i++) {
-			int x, y;
-			do {
-				x = rand->getInt(0, width);
-				y = rand->getInt(0, height);
-			} while(!canWalk(x, y));
-			spreadTile(x, y, rand->getInt(MIN_GRASSFIELD_SIZE, MAX_GRASSFIELD_SIZE), GRASS_TILE);
-		}
-	}
-	
-	if(engine.getLevel() >= 4) {
-		// create heroes' bane fields
-		for(int i = 0; i < rand->getInt(MIN_BANEFIELDS, MAX_BANEFIELDS); i++) {
-			int x, y;
-			do {
-				x = rand->getInt(0, width);
-				y = rand->getInt(0, height);
-			} while(!canWalk(x, y));
-			spreadTile(x, y, rand->getInt(MIN_BANEFIELD_SIZE, MAX_BANEFIELD_SIZE), HEROESBANE_TILE);
-		}
-	}
-	
-	// place player and stairs
-	place(engine.player);
-	place(engine.stairs);
-
-	// spawn monsters
-	for(int i = 0; i < rand->getInt(MIN_HORDES, MAX_HORDES); i++) {
-		int x, y;
-		do {
-			x = rand->getInt(0, width);
-			y = rand->getInt(0, height);
-		} while(!canWalk(x, y));
-		spawnHorde(x, y);
-	}
-
-	// spawn items
-	for(int i = 0; i < rand->getInt(MIN_ITEMS, MAX_ITEMS); i++) {
-		int x, y;
-		do {
-			x = rand->getInt(0, width);
-			y = rand->getInt(0, height);
-		} while(!canWalk(x, y));
-		addItem(x, y);
-	}
-}
-
-// TODO: make it so edges of map aren't so flat
-void Map::generateMap() {
-	TCODRandom* rand = TCODRandom::getInstance();
+	// set every tiles to walkable initially
+	// dummy tiles are so named because they're only there so the tunnel-building algorithm
+	// is able to 'walk' through them - they get turned into rock afterwards
 	for(int x = 0; x < width; x++) {
 		for(int y = 0; y < height; y++) {
-			if(rand->getInt(0, 100) < 45) {
-				tiles[x+y*width] = new Tile('#', false, false, TCODColor::lightGrey);
-				map->setProperties(x, y, false, false);
-			} else {
-				tiles[x+y*width] = new Tile('.', true, true, TCODColor::lightGrey);
-				map->setProperties(x, y, true, true);
-			}
+			initTile(x, y, tiles::DUMMY_TILE);      
 		}
 	}
-	
-	int i = 0;
-	while(i < 7) {
-		Tile** newTiles = new Tile*[width*height];
-		for(int x = 0; x < width; x++) {
-			for(int y = 0; y < height; y++) {			
-				if((i < 3 && nbs(x, y, WALL_TILE.ch >= 5 || nbs(x, y, WALL_TILE.ch) <= 2)) ||
-				   nbs(x, y, WALL_TILE.ch) >= 5 || x == 0 || x == width-1 || y == 0 || y == height-1) {
-					newTiles[x+y*width] = new Tile('#', false, false, TCODColor::lightGrey);
-					map->setProperties(x, y, false, false);
-				} else {
-					newTiles[x+y*width] = new Tile('.', false, false, TCODColor::lightGrey);
-					map->setProperties(x, y, true, true);
-				}
+
+	// initialize rooms at random locations
+	// they *should* be non-overlapping
+	// TODO: make sure rooms don't end on edges of map
+	for(int i = 0; i < 20; i++) {
+		int x2 = rand->getInt(7, width);
+		int y2 = rand->getInt(7, height);
+		int x1 = x2-rand->getInt(5, 10);
+		int y1 = y2-rand->getInt(5, 10);
+		// prevent rooms from intersection each other
+		// TODO: fix this because it doesn't work of course
+		bool intersects = false;
+		for(Room other : rooms) {
+			if((other.x1 >= x1 && other.x1 <= x2) || (other.y1 >= y1 && other.y1 < y2)) {
+				intersects = true;
+				break;
 			}
 		}
 
-		tiles = newTiles;
-		
-		i++;
+		if(intersects) continue;
+		Room room {x1, y1, x2, y2};
+		digRoom(room);
+		rooms.push_back(room);
+		engine.player->x = (x1+x2)/2;
+		engine.player->y = (y1+y2)/2;
+	}
+
+	// sort rooms by position
+	std::sort(rooms.begin(), rooms.end(),
+		   [](Room a, Room b) {
+			  return a.x1+a.y1 < b.x1+b.y1;
+		  });
+
+	// TODO: make sure to remove any unmatched rooms, or match them
+	std::deque<Room> candidates = rooms;	
+	for(Room room : rooms) {
+		if(candidates.size() <= 1) break;
+		digTunnel(room, candidates.at(1));
+		candidates.pop_front();
+	}
+
+	// make dummy tiles (i.e. the ones that aren't part of rooms are tunnels) into solid rock
+	// TODO: fix the bug where there are leftover dummy tiles
+	for(int x = 0; x < width; x++) {
+		for(int y = 0; y < height; y++) {
+		        if(*tiles[x+y*width] == tiles::DUMMY_TILE)
+			        setTile(x, y, tiles::ROCK_TILE);
+		}
+	}
+
+	// spawn monsters - TODO: improve spawning and also spawn items and features
+	for(Room room : rooms) {
+		if(rand->getInt(0, 100) < 60)
+			spawnHorde(rand->getInt(room.x1+1, room.x2-1),
+				  rand->getInt(room.y1+1, room.y2-1));
 	}
 }
 
-// count number of neighboring tiles with given char
-// TODO: compare tiles rather than chars (without making the game freeze)
+void Map::initTile(int x, int y, const Tile& tile) {
+	tiles[x+y*width] = new Tile(tile.ch, tile.transparent, tile.walkable,
+				    tile.fgColor, tile.bgColor);
+	map->setProperties(x, y, tile.transparent, tile.walkable);
+}
+
+void Map::digRoom(Room room) {
+        for(int x = room.x1; x <= room.x2; x++) {
+		for(int y = room.y1; y <= room.y2; y++) {
+			if(x == room.x1 || x == room.x2) setTile(x, y, tiles::SIDE_WALL_TILE);
+			else if(y == room.y1 || y == room.y2) setTile(x, y, tiles::TOP_WALL_TILE);
+			else setTile(x, y, tiles::FLOOR_TILE);
+		}
+	}
+}
+
+// use A* to find a path between two rooms, and then dig it
+void Map::digTunnel(Room from, Room to) {
+	TCODRandom* rand = TCODRandom::getInstance();
+	int startx = rand->getInt(from.x1+2, from.x2-2);
+	int starty = rand->getInt(0, 1) == 0? from.y1 : from.y2;
+	int endx = rand->getInt(0, 1) == 0? to.x1 : to.x2;
+	int endy = rand->getInt(to.y1+1, to.y2-1);
+
+	setTile(startx, starty, tiles::FLOOR_TILE);
+	setTile(endx, endy, tiles::FLOOR_TILE);
+	
+	TCODPath* path = new TCODPath(map, 0);
+        path->compute(startx, starty, endx, endy);
+	for(int i = 0; i < path->size(); i++) {
+		int x, y;
+		path->get(i, &x, &y);
+		setTile(x, y, tiles::TUNNEL_TILE);
+	}
+}
+
 int Map::nbs(int x, int y, int ch) const {
 	int count = 0;
 	
@@ -173,20 +148,10 @@ int Map::nbs(int x, int y, int ch) const {
 	return count;
 }
 
-// spread a tile around the map in a blob shape
-void Map::spreadTile(int x, int y, int count, const Tile& tile) {
-	TCODRandom* rand = TCODRandom::getInstance();
-	if(canWalk(x, y)) {
-		setTile(x, y, tile);
-	}
-	
-	if(count > 0) {
-		for(int i = -1; i < 1; i++) {
-			for(int j = -1; j < 1; j++) {
-				if(x+i > 0 && x+i < width && y+j > 0 && y+j < height && rand->getInt(0, 100) < 40) {
-					spreadTile(x+i, y+j, count-1, tile);
-				}
-			}
+void Map::dig(int x, int y, int w, int h) {
+	for(int i = 0; i < w; i++) {
+		for(int j = 0; j < h; j++) {
+			setTile(x+i, y+j, tiles::TUNNEL_TILE);
 		}
 	}
 }
@@ -196,25 +161,19 @@ Tile Map::getTile(int x, int y) const {
 }
 
 void Map::setTile(int x, int y, const Tile& tile) {
-	if(x < 0 || x > width || y < 0 || y > height) return;
-
-	Tile* t = tiles[x+y*width];
-        t->ch = tile.ch;
-	t->transparent = tile.transparent;
-	t->walkable = tile.walkable;
-	t->fgColor = tile.fgColor;
-	t->bgColor = tile.bgColor;
-	map->setProperties(x, y, t->transparent, t->walkable);
+	if(x > 0 && x < width && y > 0 && y < height) {
+		Tile* t = tiles[x+y*width];
+		t->ch = tile.ch;
+		t->transparent = tile.transparent;
+		t->walkable = tile.walkable;
+		t->fgColor = tile.fgColor;
+		t->bgColor = tile.bgColor;
+		map->setProperties(x, y, t->transparent, t->walkable);
+	}
 }
 
 bool Map::isWall(int x, int y) const {
 	return !map->isWalkable(x, y);
-}
-
-// used in spawning most initial actors -- actors should only spawn on clean floor
-// unless they're added during the level or they're aquatic or something
-bool Map::isFloor(int x, int y) const {
-	return *tiles[x+y*width] == FLOOR_TILE;
 }
 
 bool Map::canWalk(int x, int y) const  {
@@ -239,18 +198,13 @@ void Map::setTileBackground(int x, int y, const TCODColor& color) {
 // heroes' bane is good for one spawn and then it's done
 void Map::addBloodstain(int x, int y, const TCODColor& color) {
 	Tile* tile = tiles[x+y*width];	
-	if(*tile == HEROESBANE_TILE) {
+	if(*tile == tiles::HEROESBANE_TILE) {
 		spawnMonster(x, y, REDCAP);
 		engine.gui->message(Gui::ACTION, "Your blood soaks the heroes\' bane. A redcap appears! ");
-		*tile = FLOOR_TILE;
+		*tile = tiles::FLOOR_TILE;
 	}
-	
-	if(*tile == WATER_TILE) {
-		tile->bgColor = color*0.8;
-		tile->fgColor = color;
-	} else {
-		tile->fgColor = color;
-	}
+
+	if(*tile != tiles::ROCK_TILE) tile->fgColor = color;
 }
 
 bool Map::isExplored(int x, int y) const {
@@ -299,59 +253,6 @@ void Map::addItem(int x, int y) {
 		healthPotion->pickable = new Healer(5);
 		engine.actors.push_back(healthPotion);
 		engine.sendToBack(healthPotion);
-	}
-}
-
-void Map::floodFill(int x, int y) {
-	if(!isWall(x, y) && !tiles[x+y*width]->ffillFlag)
-		tiles[x+y*width]->ffillFlag = true;
-	else return;
-	
-	floodFill(x, y-1);
-	floodFill(x-1, y);
-	floodFill(x+1, y);
-	floodFill(x, y+1);
-}
-
-// see how much of the map is covered in walkable tiles
-float Map::getWalkableCoverage() {
-	float walkableCount = 0.0;
-	
-	for(int y = 0; y < height; y++) {
-		for(int x = 0; x < width; x++) {
-			if(!isWall(x, y)) walkableCount++;
-		}
-	}
-
-	return walkableCount/(width*height);
-}
-
-// fill rooms that are closed off from main map
-void Map::removeDisjointRooms() {
-	for(int y = 0; y < height; y++) {
-		for(int x = 0; x < width; x++) {
-			if(!isWall(x, y) && !tiles[x+y*width]->ffillFlag) {
-			        tiles[x+y*width] = new Tile('#', false, false, TCODColor::lightGrey);;
-				map->setProperties(x, y, false, false);
-			}
-		}
-	}
-}
-
-// place an actor on a tile, making sure it is a walkable tile
-// for anything that's not a player, make sure it doesn't spawn in FOV
-void Map::place(Actor* actor) {
-	TCODRandom* rand = TCODRandom::getInstance();
-
-	while(true) {
-		int x = rand->getInt(0, width);
-		int y = rand->getInt(0, height);
-
-		if(canWalk(x, y)) {
-			actor->x = x;
-			actor->y = y;
-			break;
-		}
 	}
 }
 

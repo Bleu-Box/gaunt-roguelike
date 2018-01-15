@@ -2,10 +2,11 @@
 #include "main.h"
 
 Engine::Engine(int screenWidth, int screenHeight): 
-	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(10), turnCount(0),
+	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(2), turnCount(0),
 	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
 	// set font 
-	TCODConsole::setCustomFont("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/fonts/dejavu16x16_gs_tc.png", TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
+	TCODConsole::setCustomFont("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/fonts/terminal16x16_gs_ro.png",
+				   TCOD_FONT_LAYOUT_ASCII_INROW|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
 	gui = new Gui();
 }
@@ -28,8 +29,8 @@ void Engine::init() {
 	stairs = new Actor(0, 0, '>', "Stairs", TCODColor::yellow);
 	stairs->blocks = false;
 	actors.push_back(stairs);
-	
-	map = new Map(screenWidth, screenHeight);
+	// TODO: find a better way to make map size based on Gui panel sizes
+	map = new Map(screenWidth-18, screenHeight-7);
 	
 	gui->message(Gui::ACTION, "As you venture into the tunnel, darkness meets your eyes.");
 	gameStatus = STARTUP;
@@ -83,8 +84,8 @@ void Engine::update() {
 
 void Engine::render() {
 	// Calculate shift amounts so player remains centered.
-	int xshift = screenWidth/2-player->x;
-	int yshift = screenHeight/2-player->y;
+	int xshift = 0;//screenWidth/2-player->x;
+	int yshift = 0;//screenHeight/2-player->y;
 	
 	TCODConsole::root->clear();
 	if(renderMap) map->render(xshift, yshift);

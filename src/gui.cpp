@@ -186,7 +186,7 @@ Menu::MenuItemCode Menu::pick() {
 	int selectedItem = 0;
 	while(!TCODConsole::isWindowClosed()) {
 		img.blitRect(TCODConsole::root, 0, 0, BKGND_IMG_SIZE, BKGND_IMG_SIZE);
-
+		
 		int currentItem = 0;
 		for(MenuItem* item : items) {
 			if(currentItem == selectedItem) {
@@ -195,7 +195,7 @@ Menu::MenuItemCode Menu::pick() {
 				TCODConsole::root->setDefaultForeground(TCODColor::lightGrey);
 			}
 		   
-			TCODConsole::root->print(10, 10+currentItem*3, item->label.c_str());
+			TCODConsole::root->print(30, 10+currentItem*3, item->label.c_str());
 			currentItem++;
 		}
 

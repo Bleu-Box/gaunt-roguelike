@@ -18,10 +18,17 @@ struct Tile {
 	bool operator!=(const Tile& rhs) const;
 };
 
-const Tile FLOOR_TILE = Tile('.', true, true, TCODColor::lightGrey);
-const Tile WALL_TILE = Tile('.', false, false, TCODColor::lightGrey);
-const Tile WATER_TILE = Tile('~', true, true, TCODColor::blue, TCODColor::darkBlue);
-const Tile GRASS_TILE = Tile('"', true, true, TCODColor::desaturatedChartreuse);
-const Tile HEROESBANE_TILE = Tile('"', true, true, TCODColor::copper); // spawns redcaps on contact with blood
-
+namespace tiles {
+	// dummy tiles are just walkable tiles used before tunnels are dug (so A* can go through them)
+	// after tunnels are made, they're meant to be filled in with rock
+	const Tile DUMMY_TILE = Tile('*', true, true);
+	const Tile ROCK_TILE = Tile('#', false, false, TCODColor::black);
+	const Tile FLOOR_TILE = Tile('.', true, true);
+	const Tile TUNNEL_TILE = Tile(TCOD_CHAR_BLOCK2, true, true);
+	const Tile TOP_WALL_TILE = Tile('-', false, false);
+	const Tile SIDE_WALL_TILE = Tile('|', false, false);
+	// spawns redcaps on contact with blood
+	const Tile HEROESBANE_TILE = Tile('"', true, true, TCODColor::copper);
+}
+ 
 #endif
