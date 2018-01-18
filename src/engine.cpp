@@ -2,10 +2,10 @@
 #include "main.h"
 
 Engine::Engine(int screenWidth, int screenHeight): 
-	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(2), turnCount(0),
+	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(5), turnCount(0),
 	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
-	// set font 
-	TCODConsole::setCustomFont("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/fonts/terminal16x16_gs_ro.png",
+	// set font	
+	TCODConsole::setCustomFont("./assets/fonts/terminal10x16_gs_ro.png",
 				   TCOD_FONT_LAYOUT_ASCII_INROW|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
 	gui = new Gui();
@@ -19,13 +19,13 @@ Engine::~Engine() {
 void Engine::init() {
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(25, 20, 0.5);
+	player->destructible = new PlayerDestructible(20, 5, 0.5);
 	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi(2);
 	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet
 	actors.push_back(player);
 
-	// the stairs -- even though they begin w/ a location at (0, 0), Map::createRoom will put them somewhere else
+	// the stairs -- even though they begin w/ a location at (0, 0), the map will put them somewhere else
 	stairs = new Actor(0, 0, '>', "Stairs", TCODColor::yellow);
 	stairs->blocks = false;
 	actors.push_back(stairs);
@@ -167,7 +167,7 @@ void Engine::nextLevel() {
 	actors.push_back(player);
 	actors.push_back(stairs);
 	
-	map = new Map(screenWidth, screenHeight);
+	map = new Map(screenWidth-18, screenHeight-7);
 	
 	gameStatus = STARTUP;
 	map->computeFov();

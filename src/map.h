@@ -2,7 +2,7 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include <deque>
+#include <vector>
 
 struct Room {
 	int x1, y1, x2, y2;
@@ -29,20 +29,23 @@ class Map {
 	int getHeight() const { return height; }
 	void setTile(int x, int y, const Tile& tile);
 	Tile getTile(int x, int y) const;
+	TCODPath findPath(int x1, int y1, int x2, int y2, float diagCost=1.41f);
 	
  private:
 	Tile** tiles;
 	TCODMap* map;
-	std::deque<Room> rooms;
+	std::vector<Room> rooms;
 	int width, height;
 	int* regions;
 
 	void init();
 	void initTile(int x, int y, const Tile& tile);
+	void makeRooms(int count);
+	void connectRooms();
 	void digRoom(Room room);
-	void digTunnel(Room from, Room to);
-	int nbs(int x, int y, int ch) const;
+	void digTunnel(Room& from, Room& to);
 	void dig(int x, int y, int w, int h);
+	void spreadTile(int x, int y, int count, const Tile& tile);
         void addItem(int x, int y);
 	MonsterKind chooseMonsterKind();
 	void spawnMonster(int x, int y, MonsterKind kind);

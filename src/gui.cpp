@@ -179,7 +179,7 @@ void Menu::addItem(MenuItemCode code, std::string label) {
 }
 
 Menu::MenuItemCode Menu::pick() {
-        static TCODImage img("C:/Users/Paul/Documents/Benjamin/C++ Stuff/Roguelikes/Gaunt/assets/images/background.png");
+        static TCODImage img("./assets/images/background.png");
 	static const int BKGND_IMG_SIZE = engine.getScreenWidth() <= engine.getScreenHeight()?
 	        engine.getScreenWidth() : engine.getScreenHeight();
 	

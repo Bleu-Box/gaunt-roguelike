@@ -33,48 +33,10 @@ void Map::init() {
 		}
 	}
 
-	// initialize rooms at random locations
-	// they *should* be non-overlapping
-	// TODO: make sure rooms don't end on edges of map
-	for(int i = 0; i < 20; i++) {
-		int x2 = rand->getInt(7, width);
-		int y2 = rand->getInt(7, height);
-		int x1 = x2-rand->getInt(5, 10);
-		int y1 = y2-rand->getInt(5, 10);
-		// prevent rooms from intersection each other
-		// TODO: fix this because it doesn't work of course
-		bool intersects = false;
-		for(Room other : rooms) {
-			if((other.x1 >= x1 && other.x1 <= x2) || (other.y1 >= y1 && other.y1 < y2)) {
-				intersects = true;
-				break;
-			}
-		}
-
-		if(intersects) continue;
-		Room room {x1, y1, x2, y2};
-		digRoom(room);
-		rooms.push_back(room);
-		engine.player->x = (x1+x2)/2;
-		engine.player->y = (y1+y2)/2;
-	}
-
-	// sort rooms by position
-	std::sort(rooms.begin(), rooms.end(),
-		   [](Room a, Room b) {
-			  return a.x1+a.y1 < b.x1+b.y1;
-		  });
-
-	// TODO: make sure to remove any unmatched rooms, or match them
-	std::deque<Room> candidates = rooms;	
-	for(Room room : rooms) {
-		if(candidates.size() <= 1) break;
-		digTunnel(room, candidates.at(1));
-		candidates.pop_front();
-	}
-
+	makeRooms(rand->getInt(5, 15));
+	connectRooms();
+	
 	// make dummy tiles (i.e. the ones that aren't part of rooms are tunnels) into solid rock
-	// TODO: fix the bug where there are leftover dummy tiles
 	for(int x = 0; x < width; x++) {
 		for(int y = 0; y < height; y++) {
 		        if(*tiles[x+y*width] == tiles::DUMMY_TILE)
@@ -82,20 +44,76 @@ void Map::init() {
 		}
 	}
 
-	// spawn monsters - TODO: improve spawning and also spawn items and features
+	// on later levels, spawn heroes' bane
+        if(engine.getLevel() >= 4) {
+		int maxFields = rand->getInt(0, rooms.size()-2);
+		int numFields = 0;
+		for(Room room : rooms) {
+			if(numFields >= maxFields) break;
+			spreadTile(rand->getInt(room.x1+1, room.x2-1),
+				   rand->getInt(room.y1+1, room.y2-1),
+				   5, tiles::HEROESBANE_TILE);
+			numFields++;
+		}
+	}
+
+	// TODO: when spawning things, check for walkability
+	// spawn monsters and items
 	for(Room room : rooms) {
 		if(rand->getInt(0, 100) < 60)
 			spawnHorde(rand->getInt(room.x1+1, room.x2-1),
 				  rand->getInt(room.y1+1, room.y2-1));
+		if(rand->getInt(0, 100) < 30)
+			addItem(rand->getInt(room.x1+1, room.x2-1),
+				rand->getInt(room.y1+1, room.y2-1));
+	}
+
+	// TODO: fix the thing where the player/stairs spawn upper-left corner or not in room
+	Room spawnpoint = rooms[rand->getInt(0, rooms.size())];
+	Room stairsRoom = rooms[rand->getInt(0, rooms.size())];
+	engine.player->x = rand->getInt(spawnpoint.x1+1, spawnpoint.x2-1);
+	engine.player->y = rand->getInt(spawnpoint.y1+1, spawnpoint.y2-1);
+	engine.stairs->x = rand->getInt(stairsRoom.x1+1, stairsRoom.x2-1);
+	engine.stairs->y = rand->getInt(stairsRoom.y1+1, stairsRoom.y2-1);
+}
+
+// make and dig all the rooms at random locations
+void Map::makeRooms(int count) {
+	TCODRandom* rand = TCODRandom::getInstance();
+	
+	for(int i = 0; i < count; i++) {
+		int x2 = rand->getInt(15, width-1);
+		int y2 = rand->getInt(15, height-1);
+		int x1 = x2-rand->getInt(5, 10);
+		int y1 = y2-rand->getInt(5, 10);
+		// don't make the room if one of its corners touches an occupied space (meaning it overlaps another room)
+		if(getTile(x1, y1) != tiles::DUMMY_TILE || getTile(x1, y2) != tiles::DUMMY_TILE
+		   || getTile(x2, y1) != tiles::DUMMY_TILE || getTile(x2, y2) != tiles::DUMMY_TILE)
+			continue;
+
+		Room room {x1, y1, x2, y2};
+		digRoom(room);	
+		rooms.push_back(room);
 	}
 }
 
+// connect each room to the next in the list until you reach the end of the list
+void Map::connectRooms() {
+	int i = 0;
+	for(Room room : rooms) {
+	        if(i < rooms.size()-1) digTunnel(room, rooms[i+1]);
+		i++;
+	}
+}
+
+// initialize a tile to a certain type (not to be confused with Map::setTile)
 void Map::initTile(int x, int y, const Tile& tile) {
 	tiles[x+y*width] = new Tile(tile.ch, tile.transparent, tile.walkable,
 				    tile.fgColor, tile.bgColor);
 	map->setProperties(x, y, tile.transparent, tile.walkable);
 }
 
+// dig a room with walls on the sides and floor tiles in the middle
 void Map::digRoom(Room room) {
         for(int x = room.x1; x <= room.x2; x++) {
 		for(int y = room.y1; y <= room.y2; y++) {
@@ -107,47 +125,62 @@ void Map::digRoom(Room room) {
 }
 
 // use A* to find a path between two rooms, and then dig it
-void Map::digTunnel(Room from, Room to) {
+// if a tunnel can't be dug, keep trying for a while
+void Map::digTunnel(Room& from, Room& to) {
 	TCODRandom* rand = TCODRandom::getInstance();
-	int startx = rand->getInt(from.x1+2, from.x2-2);
-	int starty = rand->getInt(0, 1) == 0? from.y1 : from.y2;
-	int endx = rand->getInt(0, 1) == 0? to.x1 : to.x2;
-	int endy = rand->getInt(to.y1+1, to.y2-1);
+	bool connected = false;
+	int numTries = 0;
 
-	setTile(startx, starty, tiles::FLOOR_TILE);
-	setTile(endx, endy, tiles::FLOOR_TILE);
+	while(!connected && numTries++ < 1000) {
+		int startx = rand->getInt(from.x1+2, from.x2-2);
+		int starty = rand->getInt(0, 1) == 0? from.y1 : from.y2;
+		int endx = rand->getInt(0, 1) == 0? to.x1 : to.x2;
+		int endy = rand->getInt(to.y1+1, to.y2-1);
+		// save the tiles that will be dug out in case we need to undo the digging
+		Tile prevStartTile = getTile(startx, starty);
+		Tile prevEndTile = getTile(endx, endy);
+
+		setTile(startx, starty, tiles::FLOOR_TILE);
+		setTile(endx, endy, tiles::FLOOR_TILE);
 	
-	TCODPath* path = new TCODPath(map, 0);
-        path->compute(startx, starty, endx, endy);
-	for(int i = 0; i < path->size(); i++) {
-		int x, y;
-		path->get(i, &x, &y);
-		setTile(x, y, tiles::TUNNEL_TILE);
+		TCODPath path = findPath(startx, starty, endx, endy, 0);
+		// if a path can't be dug, try again
+		if(path.size() == 0) {
+			setTile(startx, starty, prevStartTile);
+			setTile(endx, endy, prevEndTile);
+			continue;
+		} else {
+			connected = true;
+		}
+		
+		for(int i = 0; i < path.size(); i++) {
+			int x, y;
+			path.get(i, &x, &y);
+			if(*tiles[x+y*width] == tiles::DUMMY_TILE)
+				setTile(x, y, tiles::TUNNEL_TILE);
+		}
 	}
 }
 
-int Map::nbs(int x, int y, int ch) const {
-	int count = 0;
+// spread a tile around the map in a blob shape using a random flood-fill-like method
+void Map::spreadTile(int x, int y, int count, const Tile& tile) {
+	TCODRandom* rand = TCODRandom::getInstance();
+	if(canWalk(x, y)) {
+		setTile(x, y, tile);
+	}
 	
-	for(int i = -1; i < 2; i++) {
-		for(int j = -1; j < 2; j++) {
-			int nb_x = x+i;
-			int nb_y = y+j;
-			
-			if(i != 0 || j != 0) {
-				// tiles near the edges get a bonus to their count
-				if(nb_x < 0 || nb_y < 0 || nb_x >= width || nb_y >= height) {
-					count++;
-				} else if(tiles[nb_x+nb_y*width]->ch == ch) {
-					count++;
+	if(count > 0) {
+		for(int i = -1; i < 1; i++) {
+			for(int j = -1; j < 1; j++) {
+				if(x+i > 0 && x+i < width && y+j > 0 && y+j < height && rand->getInt(0, 100) < 40) {
+					spreadTile(x+i, y+j, count-1, tile);
 				}
 			}
 		}
 	}
-
-	return count;
 }
 
+// dig a rectangle
 void Map::dig(int x, int y, int w, int h) {
 	for(int i = 0; i < w; i++) {
 		for(int j = 0; j < h; j++) {
@@ -156,12 +189,20 @@ void Map::dig(int x, int y, int w, int h) {
 	}
 }
 
+// compute a path using A*
+TCODPath Map::findPath(int x1, int y1, int x2, int y2, float diagCost) {
+	TCODPath path = TCODPath(map, diagCost);
+	path.compute(x1, y1, x2, y2);
+	return path;
+}
+
 Tile Map::getTile(int x, int y) const {
         return *tiles[x+y*width];
 }
 
+// not to be confused with Map::initTile
 void Map::setTile(int x, int y, const Tile& tile) {
-	if(x > 0 && x < width && y > 0 && y < height) {
+	if(x >= 0 && x <= width && y >= 0 && y <= height) {
 		Tile* t = tiles[x+y*width];
 		t->ch = tile.ch;
 		t->transparent = tile.transparent;
@@ -267,10 +308,11 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	if(level >= 3) candidates.push_back(SLIME);
 	// redcaps are rare
 	if(level >= 4 && rand->getInt(0, 100) < 20) candidates.push_back(REDCAP);
-
-	return candidates[rand->getInt(0, candidates.size()-1)];
+	// bias spawning towards higher-level enemies
+	return candidates[rand->getInt(0, candidates.size()-1, candidates.size()-2)];
 }
 
+// based on the supplied monster type, create a certain monster
 void Map::spawnMonster(int x, int y, MonsterKind kind) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	
@@ -286,9 +328,9 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 	
 	case MUSHROOM: {
 		Actor* shroom = new Actor(x, y, 'm', "Mushroom", TCODColor::brass*0.5);
-		shroom->attacker = new Attacker(3, 20, "thumps");	
+		shroom->attacker = new Attacker(0, 100, "thumps");	
 		shroom->attacker->setEffect(Effect::POISON, rand->getInt(2, 10));
-		shroom->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass*0.5);
+		shroom->destructible = new MonsterDestructible(5, 2, 0.5, TCODColor::brass*0.5);
 		shroom->ai = new MonsterAi(1, 4);
 		engine.actors.push_back(shroom);
 		break;

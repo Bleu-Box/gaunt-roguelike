@@ -198,37 +198,52 @@ void MonsterAi::update(Actor* owner) {
 }
 
 void MonsterAi::moveOrAttack(Actor* owner, int targetx, int targety) {
-   int dx = targetx-owner->x;
-   int dy = targety-owner->y;
- 
-   int stepdx = (dx == 0? 0 : dx > 0? 1 : -1);
-   int stepdy = (dy == 0? 0 : dy > 0? 1 : -1);
-
-   if(confused) {
-	   TCODRandom* rand = TCODRandom::getInstance();
-	   dx = rand->getInt(-1, 1);
-	   dy = rand->getInt(-1, 1);
-   }
+	// if monster is confused, just move around randomly and don't do anything else
+	if(confused) {
+		TCODRandom* rand = TCODRandom::getInstance();
+	        int randxstep = rand->getInt(-1, 1);
+		int randystep = rand->getInt(-1, 1);
+		
+		if(engine.map->canWalk(owner->x+randxstep, owner->y)) owner->x += randxstep;
+		if(engine.map->canWalk(owner->x, owner->y+randystep)) owner->y += randystep;
+		
+		return;
+	}
+  	
+	int dx = targetx-owner->x;
+	int dy = targety-owner->y;
+	int stepdx = (dx == 0? 0 : dx > 0? 1 : -1);
+	int stepdy = (dy == 0? 0 : dy > 0? 1 : -1);
    
-   float distance = sqrtf(dx*dx+dy*dy);
+	float distance = sqrtf(dx*dx+dy*dy);
  
-   if(distance <= 1 && owner->attacker) {
-	   owner->attacker->attack(owner, engine.player);
-   } else {
-	   // if we're not attacking, we can regenerate health
-	   if(owner->destructible) owner->destructible->regenerate();
-	   for(int i = speed; i > 0; i--) {
-		   if(engine.map->canWalk(owner->x+stepdx*i, owner->y+stepdy*i)) {
-			   owner->x += stepdx*i;
-			   owner->y += stepdy*i;
-			   break;
-		   } else if(engine.map->canWalk(owner->x+stepdx*i, owner->y)) {
-			   owner->x += stepdx*i;
-			   break;
-		   } else if(engine.map->canWalk(owner->x, owner->y+stepdy*i)) {
-			   owner->y += stepdy*i;
-			   break;
-		   }
-	   }
-   }
+	if(distance <= 1 && owner->attacker) {
+		owner->attacker->attack(owner, engine.player);
+	} else {
+		// if we're not attacking, we can regenerate health
+		if(owner->destructible) owner->destructible->regenerate();
+		// if the monster's speed is high and the player is straight ahead, we can sprint
+		// otherwise, just move one space at a time
+		if(speed > 1 && (owner->x == engine.player->x || owner->y == engine.player->y)) {
+			int i = speed;
+			if(owner->y == engine.player->y) {
+				while(engine.map->canWalk(owner->x+stepdx, owner->y) && --i > 0) {
+					owner->x += stepdx;
+				}
+			} else if(owner->x == engine.player->x) {
+				while(engine.map->canWalk(owner->x, owner->y+stepdy) && --i > 0) {
+					owner->y += stepdy;
+				}
+			}
+		} else {
+			if(engine.map->canWalk(owner->x+stepdx, owner->y+stepdy)) {
+				owner->x += stepdx;
+				owner->y += stepdy;
+			} else if(engine.map->canWalk(owner->x+stepdx, owner->y)) {
+				owner->x += stepdx;
+			} else if(engine.map->canWalk(owner->x, owner->y+stepdy)) {
+				owner->y += stepdy;
+			}
+		} 
+	}
 }
