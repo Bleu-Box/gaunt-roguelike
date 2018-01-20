@@ -2,7 +2,7 @@
 
 Tile::Tile(int ch, bool transparent, bool walkable,
 	   const TCODColor& fgColor, const TCODColor& bgColor):
-        ffillFlag(false), explored(false), transparent(transparent), walkable(walkable),
+        ffillFlag(false), explored(true), transparent(transparent), walkable(walkable),
 	ch(ch), fgColor(fgColor), bgColor(bgColor) {}
 
 bool Tile::operator==(const Tile& rhs) const {

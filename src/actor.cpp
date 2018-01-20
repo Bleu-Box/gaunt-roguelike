@@ -75,9 +75,9 @@ void Actor::addEffect(Effect* effect) {
 	effects.push_back(effect);
 }
  
-void Actor::render(int xshift, int yshift) const {
-	TCODConsole::root->putChar(x+xshift, y+yshift, ch);
-	TCODConsole::root->setCharForeground(x+xshift, y+yshift, color);
+void Actor::render() const {
+	TCODConsole::root->putChar(x, y, ch);
+	TCODConsole::root->setCharForeground(x, y, color);
 }
 
 void Actor::update() {

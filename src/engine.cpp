@@ -3,10 +3,10 @@
 
 Engine::Engine(int screenWidth, int screenHeight): 
 	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(5), turnCount(0),
-	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
+	screenWidth(screenWidth), screenHeight(screenHeight), level(0) {
 	// set font	
-	TCODConsole::setCustomFont("./assets/fonts/terminal10x16_gs_ro.png",
-				   TCOD_FONT_LAYOUT_ASCII_INROW|TCOD_FONT_TYPE_GREYSCALE);
+	TCODConsole::setCustomFont("./assets/fonts/consolas12x12_gs_tc.png",
+				   TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
 	gui = new Gui();
 }
@@ -19,7 +19,7 @@ Engine::~Engine() {
 void Engine::init() {
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(20, 5, 0.5);
+	player->destructible = new PlayerDestructible(1000, 1000, 1000); //(20, 5, 0.5);
 	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi(2);
 	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet
@@ -82,17 +82,13 @@ void Engine::update() {
 	}
 }
 
-void Engine::render() {
-	// Calculate shift amounts so player remains centered.
-	int xshift = 0;//screenWidth/2-player->x;
-	int yshift = 0;//screenHeight/2-player->y;
-	
+void Engine::render() {	
 	TCODConsole::root->clear();
-	if(renderMap) map->render(xshift, yshift);
+	if(renderMap) map->render();
 
 	for(Actor* actor : actors) {
 		if(map->isInFov(actor->x, actor->y)) {
-			if(renderMap || actor == player) actor->render(xshift, yshift);
+			if(renderMap || actor == player) actor->render();
 		        gui->render();
 		}
 	}

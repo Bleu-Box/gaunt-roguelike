@@ -24,7 +24,7 @@ class Actor {
 	~Actor();
 
 	Actor& operator=(const Actor& rhs);
-	void render(int xshift = 0, int yshift = 0) const;
+	void render() const;
 	void update();
 	bool moveOrAttack(int x, int y);
 	float getDistance(int cx, int cy) const;

@@ -57,24 +57,39 @@ void Map::init() {
 		}
 	}
 
-	// TODO: when spawning things, check for walkability
 	// spawn monsters and items
 	for(Room room : rooms) {
-		if(rand->getInt(0, 100) < 60)
-			spawnHorde(rand->getInt(room.x1+1, room.x2-1),
-				  rand->getInt(room.y1+1, room.y2-1));
-		if(rand->getInt(0, 100) < 30)
-			addItem(rand->getInt(room.x1+1, room.x2-1),
-				rand->getInt(room.y1+1, room.y2-1));
+		if(rand->getInt(0, 100) < 60) {
+			int x = rand->getInt(room.x1+1, room.x2-1);
+			int y = rand->getInt(room.y1+1, room.y2-1);
+		        spawnHorde(x, y);
+		}
+		
+		if(rand->getInt(0, 100) < 30) {
+			int x = rand->getInt(room.x1+1, room.x2-1);
+			int y = rand->getInt(room.y1+1, room.y2-1);
+		        addItem(x, y);
+		}
 	}
 
-	// TODO: fix the thing where the player/stairs spawn upper-left corner or not in room
-	Room spawnpoint = rooms[rand->getInt(0, rooms.size())];
-	Room stairsRoom = rooms[rand->getInt(0, rooms.size())];
-	engine.player->x = rand->getInt(spawnpoint.x1+1, spawnpoint.x2-1);
-	engine.player->y = rand->getInt(spawnpoint.y1+1, spawnpoint.y2-1);
-	engine.stairs->x = rand->getInt(stairsRoom.x1+1, stairsRoom.x2-1);
-	engine.stairs->y = rand->getInt(stairsRoom.y1+1, stairsRoom.y2-1);
+	// spawn player (and then stairs) on a walkable tile
+	Room spawnpoint = rooms[0];
+	int player_x, player_y;
+	do {
+	        player_x = rand->getInt(spawnpoint.x1+1, spawnpoint.x2-1);
+	        player_y = rand->getInt(spawnpoint.y1+1, spawnpoint.y2-1);
+	} while(!canWalk(player_x, player_y));
+	engine.player->x = player_x;
+	engine.player->y = player_y;
+
+	Room stairsRoom = rooms[rooms.size()-1];
+	int stairs_x, stairs_y;
+	do {
+	        stairs_x = rand->getInt(stairsRoom.x1+1, stairsRoom.x2-1);
+	        stairs_y = rand->getInt(stairsRoom.y1+1, stairsRoom.y2-1);
+	} while(!canWalk(stairs_x, stairs_y));
+	engine.stairs->x = stairs_x;
+	engine.stairs->y = stairs_y;
 }
 
 // make and dig all the rooms at random locations
@@ -86,11 +101,16 @@ void Map::makeRooms(int count) {
 		int y2 = rand->getInt(15, height-1);
 		int x1 = x2-rand->getInt(5, 10);
 		int y1 = y2-rand->getInt(5, 10);
-		// don't make the room if one of its corners touches an occupied space (meaning it overlaps another room)
-		if(getTile(x1, y1) != tiles::DUMMY_TILE || getTile(x1, y2) != tiles::DUMMY_TILE
-		   || getTile(x2, y1) != tiles::DUMMY_TILE || getTile(x2, y2) != tiles::DUMMY_TILE)
-			continue;
-
+		// don't allow overlapping rooms
+		bool overlap = false;
+		for(int x = x1; x <= x2; x++) {
+			for(int y = y1; y <= y2; y++) {
+				if(getTile(x, y) != tiles::DUMMY_TILE)
+					overlap = true;
+			}
+		}
+		
+		if(overlap) continue;
 		Room room {x1, y1, x2, y2};
 		digRoom(room);	
 		rooms.push_back(room);
@@ -101,7 +121,12 @@ void Map::makeRooms(int count) {
 void Map::connectRooms() {
 	int i = 0;
 	for(Room room : rooms) {
-	        if(i < rooms.size()-1) digTunnel(room, rooms[i+1]);
+	        if(i < static_cast<int>(rooms.size()-1)) {
+			digTunnel(room, rooms[i+1]);
+		} else {
+			digTunnel(room, rooms[0]);
+		}
+		
 		i++;
 	}
 }
@@ -125,40 +150,23 @@ void Map::digRoom(Room room) {
 }
 
 // use A* to find a path between two rooms, and then dig it
-// if a tunnel can't be dug, keep trying for a while
 void Map::digTunnel(Room& from, Room& to) {
 	TCODRandom* rand = TCODRandom::getInstance();
-	bool connected = false;
-	int numTries = 0;
-
-	while(!connected && numTries++ < 1000) {
-		int startx = rand->getInt(from.x1+2, from.x2-2);
-		int starty = rand->getInt(0, 1) == 0? from.y1 : from.y2;
-		int endx = rand->getInt(0, 1) == 0? to.x1 : to.x2;
-		int endy = rand->getInt(to.y1+1, to.y2-1);
-		// save the tiles that will be dug out in case we need to undo the digging
-		Tile prevStartTile = getTile(startx, starty);
-		Tile prevEndTile = getTile(endx, endy);
-
-		setTile(startx, starty, tiles::FLOOR_TILE);
-		setTile(endx, endy, tiles::FLOOR_TILE);
 	
-		TCODPath path = findPath(startx, starty, endx, endy, 0);
-		// if a path can't be dug, try again
-		if(path.size() == 0) {
-			setTile(startx, starty, prevStartTile);
-			setTile(endx, endy, prevEndTile);
-			continue;
-		} else {
-			connected = true;
-		}
-		
-		for(int i = 0; i < path.size(); i++) {
-			int x, y;
-			path.get(i, &x, &y);
-			if(*tiles[x+y*width] == tiles::DUMMY_TILE)
-				setTile(x, y, tiles::TUNNEL_TILE);
-		}
+	int startx = rand->getInt(from.x1+2, from.x2-2);
+	int starty = rand->getInt(0, 1) == 0? from.y1 : from.y2;
+	int endx = rand->getInt(0, 1) == 0? to.x1 : to.x2;
+	int endy = rand->getInt(to.y1+1, to.y2-1);
+
+	setTile(startx, starty, tiles::FLOOR_TILE);
+	setTile(endx, endy, tiles::FLOOR_TILE);
+	
+	TCODPath path = findPath(startx, starty, endx, endy, 0);	
+	for(int i = 0; i < path.size(); i++) {
+		int x, y;
+		path.get(i, &x, &y);
+		if(*tiles[x+y*width] == tiles::DUMMY_TILE)
+			setTile(x, y, tiles::TUNNEL_TILE);
 	}
 }
 
@@ -267,24 +275,26 @@ void Map::computeFov() {
 	map->computeFov(engine.player->x, engine.player->y, engine.getFovRadius());
 }
 
-void Map::render(int xshift, int yshift) const {
+void Map::render() const {
 	// scan the map and color everything accordingly
 	for(int y = 0; y < height; y++) {
 		for(int x = 0; x < width; x++) {
 			if(isInFov(x, y)) {
-				TCODConsole::root->setChar(x+xshift, y+yshift, tiles[x+y*width]->ch);
-				TCODConsole::root->setCharForeground(x+xshift, y+yshift, tiles[x+y*width]->fgColor);
-				TCODConsole::root->setCharBackground(x+xshift, y+yshift, tiles[x+y*width]->bgColor);
+				TCODConsole::root->setChar(x, y, tiles[x+y*width]->ch);
+				TCODConsole::root->setCharForeground(x, y, tiles[x+y*width]->fgColor);
+				TCODConsole::root->setCharBackground(x, y, tiles[x+y*width]->bgColor);
 			} else if(isExplored(x, y)) {
-				TCODConsole::root->setChar(x+xshift, y+yshift, tiles[x+y*width]->ch);
-				TCODConsole::root->setCharForeground(x+xshift, y+yshift, tiles[x+y*width]->fgColor*0.2);
-				TCODConsole::root->setCharBackground(x+xshift, y+yshift, tiles[x+y*width]->bgColor);
+				TCODConsole::root->setChar(x, y, tiles[x+y*width]->ch);
+				TCODConsole::root->setCharForeground(x, y, tiles[x+y*width]->fgColor*0.2);
+				TCODConsole::root->setCharBackground(x, y, tiles[x+y*width]->bgColor);
 			}
 		}
         }		
 }
 
 void Map::addItem(int x, int y) {
+	if(!canWalk(x, y)) return;
+
 	TCODRandom* rand = TCODRandom::getInstance();
 	int choice = rand->getInt(0, 100);
 	
