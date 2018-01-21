@@ -20,6 +20,8 @@ class Map {
 	void setTileForeground(int x, int y, const TCODColor& color);
 	void setTileBackground(int x, int y, const TCODColor& color);
 	void addBloodstain(int x, int y, const TCODColor& color);
+	void openDoor(int x, int y);
+	void closeDoor(int x, int y);
 	void render() const;
 	bool isInFov(int x, int y) const;
 	bool isExplored(int x, int y) const;

@@ -2,8 +2,14 @@
 
 Tile::Tile(int ch, bool transparent, bool walkable,
 	   const TCODColor& fgColor, const TCODColor& bgColor):
-        ffillFlag(false), explored(true), transparent(transparent), walkable(walkable),
-	ch(ch), fgColor(fgColor), bgColor(bgColor) {}
+        ffillFlag(false),  transparent(transparent), walkable(walkable),
+	ch(ch), fgColor(fgColor), bgColor(bgColor) {
+	#if DEBUG_MODE == 1
+		explored = true;
+        #else
+		explored = false;
+	#endif
+}
 
 bool Tile::operator==(const Tile& rhs) const {
 	return ch == rhs.ch &&

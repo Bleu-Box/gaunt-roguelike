@@ -37,10 +37,13 @@ void Map::init() {
 	connectRooms();
 	
 	// make dummy tiles (i.e. the ones that aren't part of rooms are tunnels) into solid rock
+	// also, turn open doors into closed doors
 	for(int x = 0; x < width; x++) {
 		for(int y = 0; y < height; y++) {
 		        if(*tiles[x+y*width] == tiles::DUMMY_TILE)
 			        setTile(x, y, tiles::ROCK_TILE);
+			else if(*tiles[x+y*width] == tiles::OPEN_DOOR_TILE)
+				setTile(x, y, tiles::CLOSED_DOOR_TILE);
 		}
 	}
 
@@ -157,9 +160,12 @@ void Map::digTunnel(Room& from, Room& to) {
 	int starty = rand->getInt(0, 1) == 0? from.y1 : from.y2;
 	int endx = rand->getInt(0, 1) == 0? to.x1 : to.x2;
 	int endy = rand->getInt(to.y1+1, to.y2-1);
-
-	setTile(startx, starty, tiles::FLOOR_TILE);
-	setTile(endx, endy, tiles::FLOOR_TILE);
+	// there's a random chance of doors spawning instead of a plain opening
+	// doors start out open so the pathfinding algorithm can go through them
+	if(rand->getInt(0, 100) < 40) setTile(startx, starty, tiles::OPEN_DOOR_TILE);
+	else setTile(startx, starty, tiles::FLOOR_TILE);
+        if(rand->getInt(0, 100) < 40) setTile(endx, endy, tiles::OPEN_DOOR_TILE);
+	else setTile(endx, endy, tiles::FLOOR_TILE);
 	
 	TCODPath path = findPath(startx, starty, endx, endy, 0);	
 	for(int i = 0; i < path.size(); i++) {
@@ -253,7 +259,30 @@ void Map::addBloodstain(int x, int y, const TCODColor& color) {
 		*tile = tiles::FLOOR_TILE;
 	}
 
-	if(*tile != tiles::ROCK_TILE) tile->fgColor = color;
+	if(*tile != tiles::ROCK_TILE && *tile != tiles::CLOSED_DOOR_TILE && *tile != tiles::OPEN_DOOR_TILE)
+		tile->fgColor = color;
+}
+
+void Map::openDoor(int x, int y) {
+	Tile tile = getTile(x, y);
+	if(tile == tiles::CLOSED_DOOR_TILE) {
+		setTile(x, y, tiles::OPEN_DOOR_TILE);
+	} else if(tile == tiles::OPEN_DOOR_TILE) {
+		engine.gui->message(Gui::OBSERVE, "That door\'s already open.");
+	} else {
+		engine.gui->message(Gui::OBSERVE, "That\'s not a door!");
+	}
+}
+
+void Map::closeDoor(int x, int y) {
+	Tile tile = getTile(x, y);
+	if(tile == tiles::OPEN_DOOR_TILE) {
+		setTile(x, y, tiles::CLOSED_DOOR_TILE);
+	} else if(tile == tiles::CLOSED_DOOR_TILE) {
+		engine.gui->message(Gui::OBSERVE, "That door\'s already closed.");
+	} else {
+		engine.gui->message(Gui::OBSERVE, "That\'s not a door!");
+	}
 }
 
 bool Map::isExplored(int x, int y) const {

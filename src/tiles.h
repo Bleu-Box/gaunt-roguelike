@@ -27,6 +27,8 @@ namespace tiles {
 	const Tile TUNNEL_TILE = Tile('#', true, true);
 	const Tile TOP_WALL_TILE = Tile(TCOD_CHAR_HLINE, false, false);
 	const Tile SIDE_WALL_TILE = Tile(TCOD_CHAR_VLINE, false, false);
+	const Tile CLOSED_DOOR_TILE = Tile('+', false, false, TCODColor::lighterSepia);
+	const Tile OPEN_DOOR_TILE = Tile('\'', true, true, TCODColor::lighterSepia);
 	// spawns redcaps on contact with blood
 	const Tile HEROESBANE_TILE = Tile('"', true, true, TCODColor::copper);
 }

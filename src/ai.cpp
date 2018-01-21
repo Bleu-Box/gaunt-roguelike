@@ -102,6 +102,40 @@ void PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		}
 	}
 		break;
+        // open door in indicated direction 
+	case 'o': {
+		engine.gui->message(Gui::OBSERVE, "Where would you like to open a door? Indicate direction using an arrow key.");
+		TCOD_key_t key;
+		TCODSystem::waitForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL, true);
+		int door_x = owner->x;
+		int door_y = owner->y;
+		
+		if(key.vk == TCODK_UP) door_y--;
+		else if(key.vk == TCODK_DOWN) door_y++;
+		else if(key.vk == TCODK_LEFT) door_x--;
+		else if(key.vk == TCODK_RIGHT) door_x++;
+		else engine.gui->message(Gui::ACTION, "That\'s not a valid direction.");
+
+		engine.map->openDoor(door_x, door_y);
+	}
+		break;
+	// close door
+	case 'c': {
+		engine.gui->message(Gui::OBSERVE, "Where would you like to close a door? Indicate direction using an arrow key.");
+		TCOD_key_t key;
+		TCODSystem::waitForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL, true);
+		int door_x = owner->x;
+		int door_y = owner->y;
+		
+		if(key.vk == TCODK_UP) door_y--;
+		else if(key.vk == TCODK_DOWN) door_y++;
+		else if(key.vk == TCODK_LEFT) door_x--;
+		else if(key.vk == TCODK_RIGHT) door_x++;
+		else engine.gui->message(Gui::ACTION, "That\'s not a valid direction.");
+
+		engine.map->closeDoor(door_x, door_y);
+	}
+		break;
 	// 'r' = rest 1 turn
 	case 'r': {
 	        engine.gameStatus = Engine::NEW_TURN;

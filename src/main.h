@@ -2,6 +2,8 @@
 // TODO: don't use this to put all your dependencies in
 #ifndef MAIN_H
 #define MAIN_H
+// debug mode changes things like player health so playing through is easier
+#define DEBUG_MODE 0
 
 #include "lib/libtcod.hpp"
 #include "tiles.h"

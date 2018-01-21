@@ -4,7 +4,7 @@
 Engine::Engine(int screenWidth, int screenHeight): 
 	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(5), turnCount(0),
 	screenWidth(screenWidth), screenHeight(screenHeight), level(0) {
-	// set font	
+	// set font
 	TCODConsole::setCustomFont("./assets/fonts/consolas12x12_gs_tc.png",
 				   TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
@@ -18,8 +18,12 @@ Engine::~Engine() {
  
 void Engine::init() {
 	// init player and related things for it
-	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(1000, 1000, 1000); //(20, 5, 0.5);
+	player = new Actor(100, 100, '@', "Player", TCODColor::white);	
+        #if DEBUG_MODE == 1
+		player->destructible = new PlayerDestructible(1000, 1000, 1000);
+        #else
+		player->destructible = new PlayerDestructible(20, 5, 0.5);
+        #endif
 	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi(2);
 	player->container = new Container(26); // create 26 inventory slots for player - 1 for each letter of the alphabet
