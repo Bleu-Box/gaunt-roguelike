@@ -2,6 +2,10 @@
 #ifndef DESTRUCTIBLE_H
 #define DESTRUCTIBLE_H
 
+#include "lib/libtcod.hpp"
+
+class Actor;
+
 class Destructible {
  public:
 	Destructible(float maxHp, float defense, float regen, const TCODColor& corpseColor=TCODColor::darkRed);

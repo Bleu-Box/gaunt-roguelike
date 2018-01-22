@@ -3,6 +3,8 @@
 #define MAP_H
 
 #include <vector>
+#include "lib/libtcod.hpp"
+#include "tiles.h"
 
 struct Room {
 	int x1, y1, x2, y2;
@@ -10,7 +12,7 @@ struct Room {
 
 class Map {
  public:
-	enum MonsterKind {RAT, MUSHROOM, SLIME, REDCAP};
+	enum MonsterKind {RAT, KOBOLD, MUSHROOM, SLIME, REDCAP};
 	
         Map(int width, int height);
         ~Map();

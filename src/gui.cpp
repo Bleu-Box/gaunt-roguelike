@@ -1,5 +1,11 @@
 #include <algorithm>
 #include "main.h"
+#include "gui.h"
+#include "map.h"
+#include "actor.h"
+#include "destructible.h"
+#include "attacker.h"
+#include "effect.h"
 // TODO: fix message delay
 static const int PANEL_HEIGHT = 7;
 static const int BAR_WIDTH = 15;

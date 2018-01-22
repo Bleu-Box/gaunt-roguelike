@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "main.h"
+#include "container.h"
 
 Container::Container(int size): size(size) {}
 

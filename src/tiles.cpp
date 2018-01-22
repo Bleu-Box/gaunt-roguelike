@@ -1,4 +1,5 @@
 #include "main.h"
+#include "tiles.h"
 
 Tile::Tile(int ch, bool transparent, bool walkable,
 	   const TCODColor& fgColor, const TCODColor& bgColor):

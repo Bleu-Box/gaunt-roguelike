@@ -4,6 +4,15 @@
 
 #include <vector>
 #include <string>
+#include "lib/libtcod.hpp"
+
+class Attacker;
+class Destructible;
+class Ai;
+class Pickable;
+class Container;
+class Spreadable;
+class Effect;
 
 class Actor {	
  public:

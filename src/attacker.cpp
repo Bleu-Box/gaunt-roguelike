@@ -1,5 +1,10 @@
 #include <cassert>
 #include "main.h"
+#include "attacker.h"
+#include "actor.h"
+#include "destructible.h"
+#include "gui.h"
+#include "map.h"
 
 Attacker::Attacker(float power, float accuracy, std::string action): power(power), accuracy(accuracy), action(action),
 								     enchanted(false) {

@@ -2,6 +2,8 @@
 #ifndef PICKABLE_H
 #define PICKABLE_H
 
+class Actor;
+
 class Pickable {
  public:
 	virtual ~Pickable() {};

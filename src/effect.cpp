@@ -1,4 +1,9 @@
 #include "main.h"
+#include "effect.h"
+#include "actor.h"
+#include "ai.h"
+#include "destructible.h"
+#include "gui.h"
 
 Effect::Effect(EffectType type, int duration): type(type), duration(duration), startDuration(duration) {}
 

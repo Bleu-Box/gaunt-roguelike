@@ -3,6 +3,11 @@
 #define ENGINE_H
 
 #include <vector>
+#include "lib/libtcod.hpp"
+
+class Map;
+class Gui;
+class Actor;
 
 class Engine {
  public:

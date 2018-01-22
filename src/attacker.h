@@ -3,6 +3,9 @@
 #define ATTACKER_H
 
 #include <string>
+#include "effect.h"
+
+class Actor;
 
 class Attacker {
  public:

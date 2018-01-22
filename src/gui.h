@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <string>
+#include "lib/libtcod.hpp"
 
 class Menu {
  public:

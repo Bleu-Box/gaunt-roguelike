@@ -4,6 +4,8 @@
 
 #include <string>
 
+class Actor;
+
 class Effect {
  public:
 	enum EffectType {POISON, BLINDNESS, CONFUSION};

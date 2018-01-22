@@ -3,6 +3,8 @@
 
 #include <vector>
 
+class Actor;
+
 class Container {
  public:
 	std::vector<Actor*> inventory;

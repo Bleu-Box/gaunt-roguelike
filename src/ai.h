@@ -3,6 +3,8 @@
 
 #include <functional>
 
+class Actor;
+
 class Ai {
  public:
 	bool confused;
@@ -34,14 +36,18 @@ class MonsterAi: public Ai {
  public:
 	int range;
 	
-	MonsterAi(int speed, int range);
+	MonsterAi(int speed, int range,
+		  std::function<void(MonsterAi*, Actor*)> behavior =
+		  [](MonsterAi* ai, Actor* owner) {
+			  ai->pursuePlayer(owner);
+		  });
 	
 	void update(Actor* owner);
-	std::function<bool(const Actor&)> spreadPredicate; // this decides whether or not owner will spread	
-
- protected: 
-	int moveCount; // how long it takes to stop chasing target
+	void pursuePlayer(Actor* owner);
+	void spread(Actor* owner);
+	std::function<void(MonsterAi*, Actor*)> executeBehavior;
 	
+ protected:
 	void moveOrAttack(Actor* owner, int targetx, int targety);
 };
 

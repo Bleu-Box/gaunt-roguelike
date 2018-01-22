@@ -1,5 +1,10 @@
 #include <algorithm>
 #include "main.h"
+#include "pickable.h"
+#include "actor.h"
+#include "container.h"
+#include "gui.h"
+#include "destructible.h"
 
 // try to add owner to player's container, and then get rid of self
 bool Pickable::pick(Actor* owner, Actor* wearer) {

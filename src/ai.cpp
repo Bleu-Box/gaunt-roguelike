@@ -1,8 +1,15 @@
 // implementation for AIs
 #include <math.h>
 #include "main.h"
-
-static const int TRACKING_TURNS = 5; // how long monster follows player
+#include "ai.h"
+#include "actor.h"
+#include "destructible.h"
+#include "pickable.h"
+#include "attacker.h"
+#include "container.h"
+#include "spreadable.h"
+#include "gui.h"
+#include "map.h"
 
 Ai::Ai(int speed): confused(false), speed(speed) {}
   
@@ -210,25 +217,26 @@ Actor* PlayerAi::getFromInventory(Actor* owner) {
 	return NULL;
 }
 
-MonsterAi::MonsterAi(int speed, int range): Ai(speed), range(range) {}
+MonsterAi::MonsterAi(int speed, int range, std::function<void(MonsterAi*, Actor*)> behavior):
+	Ai(speed), range(range), executeBehavior(behavior) {}
 
 void MonsterAi::update(Actor* owner) {	
 	// don't do anything if owner is dead
 	if(owner->destructible && owner->destructible->isDead()) return;
-	// otherwise, move towards the player or attack it (if it's visible to the owner)
-	if(owner->getDistance(engine.player->x, engine.player->y) <= range+dynamic_cast<PlayerAi*>(engine.player->ai)->stealth) {
-		// we know where the player is, so we can stop blindly following it and restore tracking turns
-		moveCount = TRACKING_TURNS;
-	} else {
-		// use our tracking turns if we're following blindly
-		moveCount--;
-	}
+	executeBehavior(this, owner);
+}
 
-	if(moveCount > 0) moveOrAttack(owner, engine.player->x, engine.player->y);
- 
-	if(owner->spreadable && spreadPredicate && spreadPredicate(*owner)) {
-		owner->spreadable->spread(owner);
+void MonsterAi::pursuePlayer(Actor* owner) {
+	if(owner->getDistance(engine.player->x, engine.player->y) <=
+	   range+dynamic_cast<PlayerAi*>(engine.player->ai)->stealth) {
+		moveOrAttack(owner, engine.player->x, engine.player->y);
 	}
+}
+
+void MonsterAi::spread(Actor* owner) {
+	if(owner->spreadable) {
+		owner->spreadable->spread(owner);
+	}	
 }
 
 void MonsterAi::moveOrAttack(Actor* owner, int targetx, int targety) {

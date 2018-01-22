@@ -1,11 +1,19 @@
 #include <algorithm>
 #include "main.h"
+#include "engine.h"
+#include "actor.h"
+#include "container.h"
+#include "destructible.h"
+#include "ai.h"
+#include "attacker.h"
+#include "map.h"
+#include "gui.h"
 
 Engine::Engine(int screenWidth, int screenHeight): 
 	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(5), turnCount(0),
 	screenWidth(screenWidth), screenHeight(screenHeight), level(0) {
 	// set font
-	TCODConsole::setCustomFont("./assets/fonts/consolas12x12_gs_tc.png",
+	TCODConsole::setCustomFont("./assets/fonts/consolas18x18_gs_tc.png",
 				   TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
 	gui = new Gui();

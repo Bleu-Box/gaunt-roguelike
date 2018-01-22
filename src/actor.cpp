@@ -2,6 +2,14 @@
 #include <algorithm>
 #include <math.h>
 #include "main.h"
+#include "actor.h"
+#include "effect.h"
+#include "destructible.h"
+#include "attacker.h"
+#include "ai.h"
+#include "pickable.h"
+#include "container.h"
+#include "spreadable.h"
 
 Actor::Actor(int x, int y, int ch, std::string name, const TCODColor& color):
 	x(x), y(y), ch(ch), blocks(true), color(color),

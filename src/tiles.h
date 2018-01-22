@@ -2,6 +2,8 @@
 #ifndef TILES_H
 #define TILES_H
 
+#include "lib/libtcod.hpp"
+
 struct Tile {
 	bool ffillFlag; // used in flood fill
 	bool explored;

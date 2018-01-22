@@ -2,6 +2,8 @@
 #ifndef SPREADABLE_H
 #define SPREADABLE_H
 
+class Actor;
+
 class Spreadable {
  public:
 	int lifespan;

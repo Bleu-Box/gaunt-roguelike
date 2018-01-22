@@ -1,7 +1,12 @@
-// This is a test program for the Libtcod roguelike library
+/*
+  Gaunt is a roguelike game I'm making for fun.
+  Hopefully I can keep adding new features in the future
+  to make it (even) more fun.
+*/
+
 #include "main.h"
 
-Engine engine(130, 50);
+Engine engine(100, 50);
 
 int main() {
 	engine.load();

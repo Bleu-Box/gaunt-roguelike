@@ -2,10 +2,14 @@
 #include <vector>
 #include <algorithm>
 #include "main.h"
-
-static const int MIN_HORDES = 8;
-static const int MAX_HORDES = 25;
-static const int HORDE_SIZE = 3;
+#include "map.h"
+#include "gui.h"
+#include "actor.h"
+#include "destructible.h"
+#include "attacker.h"
+#include "ai.h"
+#include "spreadable.h"
+#include "pickable.h"
 
 Map::Map(int width, int height): width(width), height(height) {
 	tiles = new Tile*[width*height];
@@ -343,7 +347,10 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	int level = engine.getLevel();
 	
 	candidates.push_back(RAT);
-	if(level >= 2) candidates.push_back(MUSHROOM);
+	if(level >= 2) {
+		candidates.push_back(MUSHROOM);
+		candidates.push_back(KOBOLD);
+	}
 	if(level >= 3) candidates.push_back(SLIME);
 	// redcaps are rare
 	if(level >= 4 && rand->getInt(0, 100) < 20) candidates.push_back(REDCAP);
@@ -359,7 +366,7 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 	case RAT: {
 		Actor* rat = new Actor(x, y, 'r', "Rat", TCODColor::lightGrey);
 		rat->attacker = new Attacker(3, 30, "bites");
-		rat->destructible = new MonsterDestructible(10, 1, 0);
+		rat->destructible = new MonsterDestructible(5, 1, 0);
 		rat->ai = new MonsterAi(2, 10);
 		engine.actors.push_back(rat);
 		break;
@@ -374,17 +381,27 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 		engine.actors.push_back(shroom);
 		break;
 	}
-	
+
+	case KOBOLD: {
+		Actor* kobold = new Actor(x, y, 'k', "Kobold", TCODColor::amber*0.5);
+		kobold->attacker = new Attacker(5, 50, "hits");	
+	        kobold->destructible = new MonsterDestructible(7, 3, 1, TCODColor::amber*0.5);
+	        kobold->ai = new MonsterAi(1, 4);
+		engine.actors.push_back(kobold);
+		break;
+	}
+		
 	case SLIME: {
 		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::desaturatedGreen);
 		slime->attacker = new Attacker(3, 10, "smudges");
 		slime->spreadable = new Spreadable(1);
-		slime->destructible = new MonsterDestructible(5, 3, 0, TCODColor::desaturatedYellow);
-		slime->ai = new MonsterAi(1, 3);
-		MonsterAi* mai = dynamic_cast<MonsterAi*>(slime->ai);
-		mai->spreadPredicate = [](const Actor& self)->bool {
-			return self.destructible->getHp() < self.destructible->getMaxHp();
-		};		
+		slime->destructible = new MonsterDestructible(5, 2, 0, TCODColor::desaturatedYellow);
+		slime->ai = new MonsterAi(1, 3, [](MonsterAi* ai, Actor* owner) {
+				ai->pursuePlayer(owner);
+				if(owner->destructible->getHp() < owner->destructible->getMaxHp()) {
+					ai->spread(owner);
+				}
+			});
 		engine.actors.push_back(slime);
 		break;
 	}
@@ -404,17 +421,23 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 
 // spawns a horde of monsters
 void Map::spawnHorde(int x, int y) {
+	static const int HORDE_AREA = 3;
+	static const int MAX_HORDE_MEMBERS = 3;
 	TCODRandom* rand = TCODRandom::getInstance();
 
-	for(int i = -HORDE_SIZE; i < HORDE_SIZE; i++) {
-		for(int j = -HORDE_SIZE; j < HORDE_SIZE; j++) {
+	int hordeMembers = 0;
+	for(int i = -HORDE_AREA; i < HORDE_AREA; i++) {
+		for(int j = -HORDE_AREA; j < HORDE_AREA; j++) {
 			int monst_x = x+i;
-			int monst_y = y+i;
+			int monst_y = y+j;
 			MonsterKind kind = chooseMonsterKind();
 			if(monst_x > 0 && monst_x < width && monst_y > 0 && monst_y < height
-			   && canWalk(monst_x, monst_y) && rand->getInt(0, 100) < 70) {
+			   && canWalk(monst_x, monst_y) && rand->getInt(0, 100) < 30) {
 				spawnMonster(monst_x, monst_y, kind);
+				hordeMembers++;
 			}
+			
+			if(hordeMembers >= MAX_HORDE_MEMBERS) break;
 		}
 	}
 }
