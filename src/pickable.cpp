@@ -1,10 +1,16 @@
 #include <algorithm>
+#include <vector>
+#include <cassert>
+#include "lib/libtcod.hpp"
 #include "main.h"
 #include "pickable.h"
 #include "actor.h"
 #include "container.h"
 #include "gui.h"
 #include "destructible.h"
+
+std::map<Potion::Color, Effect::EffectType> Potion::potionNames;
+std::vector<Potion::Color> Potion::knownColors;
 
 // try to add owner to player's container, and then get rid of self
 bool Pickable::pick(Actor* owner, Actor* wearer) {
@@ -33,48 +39,76 @@ void Pickable::drop(Actor* owner, Actor* wearer) {
 	        engine.actors.push_back(owner);
 		owner->x = wearer->x;
 		owner->y = wearer->y;
-	        engine.gui->message(Gui::ACTION, wearer->getName() + " drops the " + owner->getName() + ".");
+	        engine.gui->message(wearer->name + " drops the " + owner->name + ".");
 	}
 }
 
-Healer::Healer(float amt): amt(amt) {}
-
-bool Healer::use(Actor *owner, Actor *wearer) {
-	if(wearer->destructible) {
-		float amountHealed = wearer->destructible->heal(amt);
-	        engine.gui->message(Gui::ACTION, wearer->getName() + " drinks a health potion, gaining " + std::to_string((int) amountHealed) + " health.");
-		if(amountHealed > 0) return Pickable::use(owner, wearer);
-	}
-	return false;
+Potion::Potion() {
+	TCODRandom* rand = TCODRandom::getInstance();
+	color = (Color) (rand->getInt(0, ((int)NUM_COLORS)-1));
 }
 
-/*
-StyxRifle::StyxRifle(float range, float damage, int ammo): range(range), damage(damage), ammo(ammo), maxAmmo(ammo) {}
+// assigns colors to effects
+void Potion::assignColors() {
+	// make sure that there are as many potion colors as effects
+	assert((int)Potion::Color::NUM_COLORS == (int)Effect::EffectType::NUM_EFFECT_TYPES);
+	TCODRandom* rand = TCODRandom::getInstance();
+        std::vector<Effect::EffectType> effects;
+	
+	for(int i = 0; i < Effect::EffectType::NUM_EFFECT_TYPES; i++) {
+		effects.push_back((Effect::EffectType) i);
+	}
+	
+        for(int i = 0; i < NUM_COLORS; i++) {
+		Color c = (Color) i;
+		Effect::EffectType type = effects[rand->getInt(0, effects.size()-1)];
+		effects.erase(std::remove(effects.begin(), effects.end(), type), effects.end());
+	        potionNames.insert(std::pair<Color, Effect::EffectType>(c, type));
+	}
+}
 
-bool StyxRifle::use(Actor* owner, Actor* wearer) {
-	engine.gui->message(Gui::OBSERVE, "Left-click a space to shoot your %s at it.", owner->name);
-	int x, y;
-	// if engine.pickTile succeeds, it will set x and y to what the player selected
-	if(!engine.pickTile(&x, &y, range)) return false;
-	
-	engine.gui->message(Gui::ATTACK, "You shoot the %s at your target.", owner->name);
-	
-	for(Actor** iterator = engine.actors.begin(); iterator != engine.actors.end(); iterator++) {
-		Actor* actor = *iterator;
-		if(actor != wearer && actor->destructible && !actor->destructible->isDead() && actor->getDistance(x, y) <= range) {
-			engine.gui->message(Gui::ATTACK, "The %s gets hit and suffers %.1f damage.", actor->name, damage);
-			actor->destructible->takeDamage(actor, damage);
+// learn that a certain color means a certain effect
+void Potion::learnColor(Color c) {
+	if(!colorIsKnown(c)) knownColors.push_back(c);
+	for(Actor* item : engine.actors) {
+		if(item->pickable) {
+			Potion* potion = dynamic_cast<Potion*>(item->pickable);
+			if(potion != nullptr) {
+				item->name = potion->getName();
+			}
 		}
 	}
-
-	if(--ammo <= 0) return Pickable::use(owner, wearer);
-	return true;
 }
 
-Crossbow::Crossbow(float range, float damage, int ammo): StyxRifle(range, damage, ammo) {}
-
-bool Crossbow::use(Actor* owner, Actor* wearer) {
-	return StyxRifle::use(owner, wearer);
+// see if player knows what effect a color gives
+bool Potion::colorIsKnown(Color c) {
+	return std::find(knownColors.begin(), knownColors.end(), c) != knownColors.end();
 }
-*/
+
+// return the potion's name based on its color/effect type
+std::string Potion::getName() {
+	if(colorIsKnown(color)) {
+		return Effect::effectTypeToString(potionNames[color])+" potion";
+	} else {
+		switch(color) {
+		case CYAN: return "Cyan potion";
+		case VERMILLION: return "Vermillion potion";
+		case AQUAMARINE: return "Aquamarine potion";
+		case BLACK: return "Black potion";
+		case MIDNIGHT_BLUE: return "Midnight blue potion";
+		case COPPER: return "Copper potion";
+		default: return "Colorless potion";	
+		}
+	}
+}
+
+// drink a potion and learn what it does
+bool Potion::use(Actor *owner, Actor *wearer) {
+	TCODRandom* rand = TCODRandom::getInstance();
+	Effect* effect = new Effect(potionNames[color], rand->getInt(5, 50));
+	wearer->addEffect(effect);
+	learnColor(color);
+	
+	return Pickable::use(owner, wearer);
+}
 

@@ -17,7 +17,7 @@ Actor::Actor(int x, int y, int ch, std::string name, const TCODColor& color):
         name(name) {}
 
 Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(other.blocks),
-				  color(other.color), name(other.getName()) {
+				  color(other.color), name(other.name) {
 	if(other.attacker) {
 		attacker = new Attacker(0, 0, "");
 		*attacker = *other.attacker;
@@ -29,7 +29,11 @@ Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(o
 	}
 
 	if(other.ai) {
-		ai = new MonsterAi(0, 0);
+		if(dynamic_cast<MonsterAi*>(other.ai) != nullptr) {
+			ai = new MonsterAi(0, 0);
+		} else {
+			ai = new PlayerAi(0);
+		}
 		*ai = *other.ai;
 	}
 
@@ -42,6 +46,13 @@ Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(o
 		spreadable = new Spreadable(0);
 		*spreadable = *other.spreadable;
 	}
+
+	/*
+	if(other.container) {
+		container = new Container(0);
+		*container = *other.container;
+	}
+	*/
 }
   
 Actor::~Actor() {
@@ -74,9 +85,11 @@ Actor& Actor::operator=(const Actor& rhs) {
 }
 
 void Actor::addEffect(Effect* effect) {
-	// don't add the effect if we already have it
+	// if we already have an effect, don't do anything -- otherwise it would cause
+	// unreasonably long-lasting effects
 	for(Effect* e : effects) {
-	        if(e->getType() == effect->getType()) return;
+	        if(e->getType() == effect->getType())
+			return;
 	}
 	
 	effect->begin(this);
@@ -90,6 +103,7 @@ void Actor::render() const {
 
 void Actor::update() {
         if(ai) ai->update(this);
+
 	std::vector<Effect*> toRemove;
 	// update any magic effects on self
 	for(Effect* effect : effects) {

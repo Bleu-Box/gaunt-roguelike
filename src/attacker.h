@@ -8,9 +8,11 @@
 class Actor;
 
 class Attacker {
- public:
-	
+ public:	
 	Attacker(float power, float accuracy, std::string action);
+	Attacker(const Attacker& other);
+
+	Attacker& operator=(const Attacker& rhs);
 		
 	void attack(Actor* owner, Actor* target);
 	Effect::EffectType getEffectType() const { return effectType; }
@@ -21,12 +23,13 @@ class Attacker {
         void setPower(float val) { if(val >= 0) power = val; }
         float getAccuracy() const { return accuracy; }
         void setAccuracy(float val) { if(val >= 0 && val <= 100) accuracy = val; }
+	std::string getAction() const { return action; }
 
  private:
+	std::string action; // the action the attacker does to its target
 	float power;
 	float accuracy;
 	Effect::EffectType effectType; // for magical effects
-	std::string action; // the action the attacker does to its target
 	int effectDuration;
 	bool enchanted; // flags whether or not attacker has effect
 };

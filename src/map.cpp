@@ -3,7 +3,6 @@
 #include <algorithm>
 #include "main.h"
 #include "map.h"
-#include "gui.h"
 #include "actor.h"
 #include "destructible.h"
 #include "attacker.h"
@@ -71,8 +70,8 @@ void Map::init() {
 			int y = rand->getInt(room.y1+1, room.y2-1);
 		        spawnHorde(x, y);
 		}
-		
-		if(rand->getInt(0, 100) < 30) {
+
+		if(true || rand->getInt(0, 100) < 30) {
 			int x = rand->getInt(room.x1+1, room.x2-1);
 			int y = rand->getInt(room.y1+1, room.y2-1);
 		        addItem(x, y);
@@ -154,6 +153,12 @@ void Map::digRoom(Room room) {
 			else setTile(x, y, tiles::FLOOR_TILE);
 		}
 	}
+	
+	// set the corners of the room
+	setTile(room.x1, room.y1, tiles::NW_WALL_TILE);
+	setTile(room.x2, room.y1, tiles::NE_WALL_TILE);
+	setTile(room.x1, room.y2, tiles::SW_WALL_TILE);
+	setTile(room.x2, room.y2, tiles::SE_WALL_TILE); 
 }
 
 // use A* to find a path between two rooms, and then dig it
@@ -257,13 +262,12 @@ void Map::setTileBackground(int x, int y, const TCODColor& color) {
 // heroes' bane is good for one spawn and then it's done
 void Map::addBloodstain(int x, int y, const TCODColor& color) {
 	Tile* tile = tiles[x+y*width];	
-	if(*tile == tiles::HEROESBANE_TILE) {
+	if(*tile == tiles::HEROESBANE_TILE && canWalk(x, y)) {
 		spawnMonster(x, y, REDCAP);
-		engine.gui->message(Gui::ACTION, "Your blood soaks the heroes\' bane. A redcap appears! ");
 		*tile = tiles::FLOOR_TILE;
 	}
 
-	if(*tile != tiles::ROCK_TILE && *tile != tiles::CLOSED_DOOR_TILE && *tile != tiles::OPEN_DOOR_TILE)
+	if(*tile == tiles::FLOOR_TILE)
 		tile->fgColor = color;
 }
 
@@ -271,22 +275,14 @@ void Map::openDoor(int x, int y) {
 	Tile tile = getTile(x, y);
 	if(tile == tiles::CLOSED_DOOR_TILE) {
 		setTile(x, y, tiles::OPEN_DOOR_TILE);
-	} else if(tile == tiles::OPEN_DOOR_TILE) {
-		engine.gui->message(Gui::OBSERVE, "That door\'s already open.");
-	} else {
-		engine.gui->message(Gui::OBSERVE, "That\'s not a door!");
-	}
+	} 
 }
 
 void Map::closeDoor(int x, int y) {
 	Tile tile = getTile(x, y);
 	if(tile == tiles::OPEN_DOOR_TILE) {
 		setTile(x, y, tiles::CLOSED_DOOR_TILE);
-	} else if(tile == tiles::CLOSED_DOOR_TILE) {
-		engine.gui->message(Gui::OBSERVE, "That door\'s already closed.");
-	} else {
-		engine.gui->message(Gui::OBSERVE, "That\'s not a door!");
-	}
+	} 
 }
 
 bool Map::isExplored(int x, int y) const {
@@ -330,14 +326,13 @@ void Map::addItem(int x, int y) {
 
 	TCODRandom* rand = TCODRandom::getInstance();
 	int choice = rand->getInt(0, 100);
-	
-	if(choice < 90) {
-		Actor* healthPotion = new Actor(x, y, '!', "health potion", TCODColor::yellow);
-		healthPotion->blocks = false;
-		healthPotion->pickable = new Healer(5);
-		engine.actors.push_back(healthPotion);
-		engine.sendToBack(healthPotion);
-	}
+
+	Potion* pick = new Potion();
+	Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::yellow);
+	potion->blocks = false;
+	potion->pickable = pick;
+	engine.actors.push_back(potion);
+	engine.sendToBack(potion);
 }
 
 // returns a monster to spawn based on level and randomness
@@ -348,12 +343,17 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	
 	candidates.push_back(RAT);
 	if(level >= 2) {
-		candidates.push_back(MUSHROOM);
+		std::vector<MonsterKind> shroomKinds = {MUSHROOM, BLUE_SHROOM, PURPLE_SHROOM};
+		candidates.push_back(shroomKinds[rand->getInt(0, shroomKinds.size()-1)]);
 		candidates.push_back(KOBOLD);
 	}
 	if(level >= 3) candidates.push_back(SLIME);
 	// redcaps are rare
 	if(level >= 4 && rand->getInt(0, 100) < 20) candidates.push_back(REDCAP);
+	if(level >= 5) candidates.push_back(CENTIPEDE);
+	if(level >= 6 && rand->getInt(0, 100) < 30) candidates.push_back(RED_CENTIPEDE);
+	if(level >= 7) candidates.push_back(GOBLIN);
+	if(level >= 8 && rand->getInt(0, 100) < 10) candidates.push_back(BRIGHT);
 	// bias spawning towards higher-level enemies
 	return candidates[rand->getInt(0, candidates.size()-1, candidates.size()-2)];
 }
@@ -373,8 +373,8 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 	}
 	
 	case MUSHROOM: {
-		Actor* shroom = new Actor(x, y, 'm', "Mushroom", TCODColor::brass*0.5);
-		shroom->attacker = new Attacker(0, 100, "thumps");	
+		Actor* shroom = new Actor(x, y, 'm', "Mushroom", TCODColor::white*0.5);
+		shroom->attacker = new Attacker(0, 50, "thumps");	
 		shroom->attacker->setEffect(Effect::POISON, rand->getInt(2, 10));
 		shroom->destructible = new MonsterDestructible(5, 2, 0.5, TCODColor::brass*0.5);
 		shroom->ai = new MonsterAi(1, 4);
@@ -382,21 +382,41 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 		break;
 	}
 
+	case BLUE_SHROOM: {
+		Actor* shroom = new Actor(x, y, 'm', "Blue Mushroom", TCODColor::darkAzure);
+		shroom->attacker = new Attacker(0, 50, "thumps");	
+		shroom->attacker->setEffect(Effect::WASTING, rand->getInt(2, 10));
+		shroom->destructible = new MonsterDestructible(5, 2, 0.5, TCODColor::brass*0.5);
+		shroom->ai = new MonsterAi(1, 4);
+		engine.actors.push_back(shroom);
+		break;
+	}
+
+	case PURPLE_SHROOM: {
+		Actor* shroom = new Actor(x, y, 'm', "Purple Mushroom", TCODColor::darkerPurple);
+		shroom->attacker = new Attacker(0, 50, "thumps");	
+		shroom->attacker->setEffect(Effect::BLINDNESS, 3);
+		shroom->destructible = new MonsterDestructible(5, 2, 0.5, TCODColor::brass*0.5);
+		shroom->ai = new MonsterAi(1, 4);
+		engine.actors.push_back(shroom);
+		break;
+	}
+	
 	case KOBOLD: {
 		Actor* kobold = new Actor(x, y, 'k', "Kobold", TCODColor::amber*0.5);
 		kobold->attacker = new Attacker(5, 50, "hits");	
-	        kobold->destructible = new MonsterDestructible(7, 3, 1, TCODColor::amber*0.5);
-	        kobold->ai = new MonsterAi(1, 4);
+	        kobold->destructible = new MonsterDestructible(7, 3, 1);
+	        kobold->ai = new MonsterAi(1, 4, true);
 		engine.actors.push_back(kobold);
 		break;
 	}
 		
 	case SLIME: {
-		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::desaturatedGreen);
+		Actor* slime = new Actor(x, y, 's', "Slime", TCODColor::celadon);
 		slime->attacker = new Attacker(3, 10, "smudges");
-		slime->spreadable = new Spreadable(1);
-		slime->destructible = new MonsterDestructible(5, 2, 0, TCODColor::desaturatedYellow);
-		slime->ai = new MonsterAi(1, 3, [](MonsterAi* ai, Actor* owner) {
+		slime->spreadable = new Spreadable(rand->getInt(1, 2));
+		slime->destructible = new MonsterDestructible(5, 2, 0, TCODColor::celadon*0.5);
+		slime->ai = new MonsterAi(1, 3, false, [](MonsterAi* ai, Actor* owner) {
 				ai->pursuePlayer(owner);
 				if(owner->destructible->getHp() < owner->destructible->getMaxHp()) {
 					ai->spread(owner);
@@ -410,10 +430,47 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 		Actor* redcap = new Actor(x, y, 'R', "Redcap", TCODColor::darkerRed);
 		redcap->attacker = new Attacker(4, 80, "clubs");
 		Effect::EffectType types[2] = {Effect::POISON, Effect::BLINDNESS};
-		redcap->attacker->setEffect(types[rand->getInt(0, 1)], rand->getInt(25, 100));
+		redcap->attacker->setEffect(types[rand->getInt(0, 1, 0)], rand->getInt(25, 50));
 		redcap->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass*0.5);
-		redcap->ai = new MonsterAi(1, 5);
+		redcap->ai = new MonsterAi(1, 5, true);
 		engine.actors.push_back(redcap);
+		break;
+	}
+
+	case CENTIPEDE: {
+		Actor* centi = new Actor(x, y, 'c', "Centipede", TCODColor::orange);
+		centi->attacker = new Attacker(6, 90, "stings");
+	        centi->destructible = new MonsterDestructible(15, 2, 1, TCODColor::darkGreen);
+	        centi->ai = new MonsterAi(2, 3);
+		engine.actors.push_back(centi);
+		break;
+	}
+
+	case RED_CENTIPEDE: {
+		Actor* centi = new Actor(x, y, 'c', "Red Centipede", TCODColor::red);
+		centi->attacker = new Attacker(6, 90, "stings");
+		centi->attacker->setEffect(Effect::POISON, rand->getInt(10, 50));
+	        centi->destructible = new MonsterDestructible(15, 2, 1, TCODColor::darkGreen);
+	        centi->ai = new MonsterAi(2, 3);
+		engine.actors.push_back(centi);
+		break;
+	}
+
+	case GOBLIN: {
+		Actor* goblin = new Actor(x, y, 'g', "Goblin", TCODColor::darkGreen);
+		goblin->attacker = new Attacker(7, 80, "stabs");
+		goblin->destructible = new MonsterDestructible(10, 2, 1, TCODColor::black);
+	        goblin->ai = new MonsterAi(1, 10, true);
+		engine.actors.push_back(goblin);
+		break;
+	}
+
+	case BRIGHT: {
+		Actor* bright = new Actor(x, y, 'b', "Bright", TCODColor::lightYellow);
+		bright->attacker = new Attacker(10, 70, "bites");
+	        bright->destructible = new MonsterDestructible(20, 8, 3, TCODColor::darkGreen);
+	        bright->ai = new MonsterAi(4, 10);
+		engine.actors.push_back(bright);
 		break;
 	}
 	}

@@ -2,6 +2,7 @@
 #include "main.h"
 #include "engine.h"
 #include "actor.h"
+#include "pickable.h"
 #include "container.h"
 #include "destructible.h"
 #include "ai.h"
@@ -25,12 +26,13 @@ Engine::~Engine() {
 }
  
 void Engine::init() {
+	// initialize random colors for potions
+	Potion::assignColors();
 	// init player and related things for it
-	player = new Actor(100, 100, '@', "Player", TCODColor::white);	
+	player = new Actor(100, 100, '@', "Player", TCODColor::white);
+	player->destructible = new PlayerDestructible(20, 5, 0.5);
         #if DEBUG_MODE == 1
-		player->destructible = new PlayerDestructible(1000, 1000, 1000);
-        #else
-		player->destructible = new PlayerDestructible(20, 5, 0.5);
+		player->destructible->invincible = true;
         #endif
 	player->attacker = new Attacker(5, 50, "whacks");
 	player->ai = new PlayerAi(2);
@@ -42,9 +44,10 @@ void Engine::init() {
 	stairs->blocks = false;
 	actors.push_back(stairs);
 	// TODO: find a better way to make map size based on Gui panel sizes
-	map = new Map(screenWidth-18, screenHeight-7);
+	//map = new Map(screenWidth-18, screenHeight-7);
+	map = new Map(screenWidth-gui->getDataConsoleWidth(), screenHeight-gui->getMessageConsoleHeight());
 	
-	gui->message(Gui::ACTION, "As you venture into the tunnel, darkness meets your eyes.");
+	gui->message("Welcome to the dungeons of Fyrgenhold!");
 	gameStatus = STARTUP;
 }
 
@@ -67,7 +70,6 @@ void Engine::load() {
 void Engine::terminate() {
 	actors.clear();
 	if(map) delete map;
-	gui->clear();
 }
  
 void Engine::update() {
@@ -80,7 +82,9 @@ void Engine::update() {
 	TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS|TCOD_EVENT_MOUSE, &lastKey, &mouse);
 	// update actors (except for player)
 	if(gameStatus == NEW_TURN) {
+		gui->clearMessages();
 		turnCount++;
+		
 		for(Actor* actor : actors) {
 			if(actor != player) actor->update();
 		}
@@ -167,7 +171,7 @@ bool Engine::pickTile(int* x, int* y, float maxRange) {
 
 void Engine::nextLevel() {	
 	level++;
-	gui->message(Gui::ACTION, "You descend deeper into the dungeons...");
+	gui->message("You descend deeper...");
 	// get rid of all the things from previous level
 	delete map;
 	// make sure to keep player and stairs though

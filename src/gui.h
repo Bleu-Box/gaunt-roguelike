@@ -27,37 +27,28 @@ class Menu {
 
 class Gui {
  public:
-	// messages sent to the GUI can be categorized into a few types
-	// the type dictates what color the message will be
-	enum MessageType {OBSERVE, ACTION, ATTACK};
-
 	Menu menu;
 	
 	Gui();
 	~Gui();
 
 	void render();
-	void message(MessageType, std::string text);
-	void clear();
+	void message(std::string text);
+	void clearMessages();
+	int getDataConsoleWidth() const { return dataConsole->getWidth(); }
+	int getDataConsoleHeight() const { return dataConsole->getHeight(); }
+	int getMessageConsoleWidth() const { return messageConsole->getWidth(); }
+	int getMessageConsoleHeight() const { return messageConsole->getHeight(); }
 	
  protected:
 	TCODConsole* dataConsole;
 	TCODConsole* messageConsole;
-
-	struct Message {
-		std::string text;
-		TCODColor color;
-		Message(std::string text, const TCODColor& color);
-		~Message();
-	};
-	
-	std::vector<Message*> log;
+	// this stores all the message content to be shown next turn
+	std::vector<std::string> messages;
 	
 	void renderBar(int x, int y, int width, std::string name,
 		       float value, float maxValue, const TCODColor& barColor,
 		       const TCODColor& backColor);
-
-	void renderMouseLook();
 };
 
 #endif

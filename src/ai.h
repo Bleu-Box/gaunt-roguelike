@@ -12,7 +12,7 @@ class Ai {
 	Ai(int speed);	
 	virtual ~Ai() {};
 	
-	virtual void update(Actor* owner) = 0; // this is an abstract method meant to be implemented only by subclasses
+	virtual void update(Actor* owner) = 0;
 
  protected:
 	int speed;
@@ -26,17 +26,18 @@ class PlayerAi: public Ai {
 	
 	void update(Actor* owner);
 	
- protected:
+ protected:	
 	bool moveOrAttack(Actor* owner, int targetx, int targety);
-	void handleActionKey(Actor* owner, int ascii);
+	bool handleActionKey(Actor* owner, int ascii);
 	Actor* getFromInventory(Actor* owner);
 };
 
 class MonsterAi: public Ai {
  public:
 	int range;
+	bool opensDoors;
 	
-	MonsterAi(int speed, int range,
+	MonsterAi(int speed, int range, bool opensDoors = false, 
 		  std::function<void(MonsterAi*, Actor*)> behavior =
 		  [](MonsterAi* ai, Actor* owner) {
 			  ai->pursuePlayer(owner);

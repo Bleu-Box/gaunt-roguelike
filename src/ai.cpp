@@ -10,6 +10,7 @@
 #include "spreadable.h"
 #include "gui.h"
 #include "map.h"
+#include "tiles.h"
 
 Ai::Ai(int speed): confused(false), speed(speed) {}
   
@@ -21,39 +22,43 @@ void PlayerAi::update(Actor* owner) {
 	// otherwise, respond to keyboard input
 	int dx = 0, dy = 0;
 	bool action = false; // whether the key input counts as an action
+	bool moved = false; // whether or not the player actually moved/tried to move
 	switch(engine.getLastKey().vk) {
 	case TCODK_UP:
 		dy = -1;
 		action = true;
+		moved = true;
 		break;
 	case TCODK_DOWN:
 		dy = 1;
 		action = true;
+		moved = true;
 		break;
 	case TCODK_LEFT:
 		dx = -1;
 		action = true;
+		moved = true;
 		break;
 	case TCODK_RIGHT:
 		dx = 1;
 		action = true;
+		moved = true;
 		break;
 	case TCODK_CHAR:
-		handleActionKey(owner, engine.getLastKey().c);
-		action = true;
+		action = handleActionKey(owner, engine.getLastKey().c);
 		break;
 	default:
 		break;
 	}
 
-	if(confused) {
-		TCODRandom* rand = TCODRandom::getInstance();
-		dx = rand->getInt(-1, 1);
-		dy = rand->getInt(-1, 1);
-	}
-	
 	if(action) {
-	        engine.gameStatus = Engine::NEW_TURN;
+		engine.gameStatus = Engine::NEW_TURN;
+
+		if(confused && moved) {
+			TCODRandom* rand = TCODRandom::getInstance();
+			dx = rand->getInt(-1, 1);
+			dy = rand->getInt(-1, 1);
+		}
 		// update FOV if player moved; otherwise, regenerate health
 		if(dx != 0 || dy != 0) {
 		        if(moveOrAttack(owner, owner->x+dx, owner->y+dy)) engine.map->computeFov();
@@ -63,8 +68,9 @@ void PlayerAi::update(Actor* owner) {
 		}
 	}
 }
- 
-void PlayerAi::handleActionKey(Actor* owner, int ascii) {
+
+// this returns true if a valid key was pressed (i.e. 'i' for inventory), and false otherwise
+bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 	switch(ascii) {
 	// 'g' = pick up item 
 	case 'g': {
@@ -75,20 +81,20 @@ void PlayerAi::handleActionKey(Actor* owner, int ascii) {
 				// add item to inventory if inventory isn't full
 				if(actor->pickable->pick(actor, owner)) {
 					found = true;
-				        engine.gui->message(Gui::OBSERVE,"You put the " + actor->getName() + " into your pack.");
+				        engine.gui->message("You put the " + actor->name + " into your pack.");
 					break;
 				} else if(!found) {
 					found = true;
-				        engine.gui->message(Gui::OBSERVE, "Your inventory is full.");
+				        engine.gui->message("Your inventory is full.");
 				}
 			}
 		}
 		// display a message if we didn't find anything
 		if(!found) {
-		        engine.gui->message(Gui::OBSERVE, "There's nothing here that you can pick up.");
+		        engine.gui->message("There's nothing here that you can pick up.");
 		}
-		
-	        engine.gameStatus = Engine::NEW_TURN;
+
+		return found;
 	}
 		break;
 	// 'i' = show inventory
@@ -96,7 +102,7 @@ void PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		Actor* actor = getFromInventory(owner);
 		if(actor) {
 			actor->pickable->use(actor, owner);
-		        engine.gameStatus = Engine::NEW_TURN;
+		        return true;
 		}
 	}
 		break;
@@ -105,13 +111,13 @@ void PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		Actor* actor = getFromInventory(owner);
 		if(actor) {
 		        actor->pickable->drop(actor, owner);
-		        engine.gameStatus = Engine::NEW_TURN;
+		        return true;
 		}
 	}
 		break;
         // open door in indicated direction 
 	case 'o': {
-		engine.gui->message(Gui::OBSERVE, "Where would you like to open a door? Indicate direction using an arrow key.");
+		engine.gui->message("Where would you like to open a door? Indicate direction using an arrow key.");
 		TCOD_key_t key;
 		TCODSystem::waitForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL, true);
 		int door_x = owner->x;
@@ -121,14 +127,15 @@ void PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		else if(key.vk == TCODK_DOWN) door_y++;
 		else if(key.vk == TCODK_LEFT) door_x--;
 		else if(key.vk == TCODK_RIGHT) door_x++;
-		else engine.gui->message(Gui::ACTION, "That\'s not a valid direction.");
+		else engine.gui->message("That\'s not a direction!");
 
 		engine.map->openDoor(door_x, door_y);
+		return true;
 	}
 		break;
 	// close door
 	case 'c': {
-		engine.gui->message(Gui::OBSERVE, "Where would you like to close a door? Indicate direction using an arrow key.");
+		engine.gui->message("Where would you like to close a door? Indicate direction using an arrow key.");
 		TCOD_key_t key;
 		TCODSystem::waitForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL, true);
 		int door_x = owner->x;
@@ -138,26 +145,30 @@ void PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		else if(key.vk == TCODK_DOWN) door_y++;
 		else if(key.vk == TCODK_LEFT) door_x--;
 		else if(key.vk == TCODK_RIGHT) door_x++;
-		else engine.gui->message(Gui::ACTION, "That\'s not a valid direction.");
+		else engine.gui->message("That\'s not a direction!");
 
 		engine.map->closeDoor(door_x, door_y);
+		return true;
 	}
 		break;
 	// 'r' = rest 1 turn
 	case 'r': {
-	        engine.gameStatus = Engine::NEW_TURN;
+	        return true;
 	}
 		break;
 	// press '>' to go down stairs
 	case '>': {
 		if(engine.stairs->x == owner->x && engine.stairs->y == owner->y) {
 			engine.nextLevel();
+			return true;
 		} else {
-		        engine.gui->message(Gui::OBSERVE, "There aren\'t any stairs here.");
+		        engine.gui->message("There aren\'t any stairs here.");
 		}
 	}
 		break;
 	}
+
+	return false;
 }
  
 bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
@@ -191,7 +202,7 @@ Actor* PlayerAi::getFromInventory(Actor* owner) {
 	int shortcut = 'a';
 	int y = 1;
 	for(Actor* actor : owner->container->inventory) {
-		console.print(2, y, "(%c) %s", shortcut, actor->getName().c_str());
+		console.print(2, y, "(%c) %s", shortcut, actor->name.c_str());
 		y++;
 		shortcut++;
 	}
@@ -210,15 +221,16 @@ Actor* PlayerAi::getFromInventory(Actor* owner) {
 			try {
 				return owner->container->inventory.at(actorIndex);
 			} catch(std::out_of_range& x) {
-			        engine.gui->message(Gui::OBSERVE, "There is no item here.");
+			        engine.gui->message("There is no item here.");
 			}
 		}
 	}
+	
 	return NULL;
 }
 
-MonsterAi::MonsterAi(int speed, int range, std::function<void(MonsterAi*, Actor*)> behavior):
-	Ai(speed), range(range), executeBehavior(behavior) {}
+MonsterAi::MonsterAi(int speed, int range, bool opensDoors, std::function<void(MonsterAi*, Actor*)> behavior):
+	Ai(speed), range(range), opensDoors(opensDoors), executeBehavior(behavior) {}
 
 void MonsterAi::update(Actor* owner) {	
 	// don't do anything if owner is dead
@@ -256,6 +268,11 @@ void MonsterAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 	int dy = targety-owner->y;
 	int stepdx = (dx == 0? 0 : dx > 0? 1 : -1);
 	int stepdy = (dy == 0? 0 : dy > 0? 1 : -1);
+
+	// open any doors that stand in our way if possible
+	if(opensDoors && engine.map->getTile(owner->x+stepdx, owner->y+stepdy) == tiles::CLOSED_DOOR_TILE) {
+		engine.map->openDoor(owner->x+stepdx, owner->y+stepdy);
+	}
    
 	float distance = sqrtf(dx*dx+dy*dy);
  

@@ -12,7 +12,11 @@ struct Room {
 
 class Map {
  public:
-	enum MonsterKind {RAT, KOBOLD, MUSHROOM, SLIME, REDCAP};
+	enum MonsterKind {
+		RAT, KOBOLD, MUSHROOM, BLUE_SHROOM,
+		PURPLE_SHROOM, SLIME, REDCAP, GOBLIN,
+		CENTIPEDE, RED_CENTIPEDE, BRIGHT
+	};
 	
         Map(int width, int height);
         ~Map();

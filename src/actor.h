@@ -26,7 +26,8 @@ class Actor {
 	Pickable* pickable; // something that can be picked and used
 	Container* container; // something that can contain other actors
 	Spreadable* spreadable; // allows actor to spread children around itself (i.e. fire spreading)
-	std::vector<Effect*> effects; // magic effects acting on actor
+	std::vector<Effect*> effects; // magic effects acting on actors
+	std::string name;
 	
 	Actor(int x, int y, int ch, std::string name, const TCODColor& color);
 	Actor(const Actor& other);
@@ -38,10 +39,6 @@ class Actor {
 	bool moveOrAttack(int x, int y);
 	float getDistance(int cx, int cy) const;
 	void addEffect(Effect* effect);
-	std::string getName() const { return name; }
-
- private:
-	std::string name;
 };
 
 #endif

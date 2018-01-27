@@ -2,45 +2,40 @@
 #ifndef PICKABLE_H
 #define PICKABLE_H
 
+#include <map>
+#include <vector>
+#include <string>
+#include "effect.h"
+
 class Actor;
 
 class Pickable {
  public:
 	virtual ~Pickable() {};
 
-	bool pick(Actor* owner, Actor* wearer);
 	virtual bool use(Actor* owner, Actor* wearer);
+	bool pick(Actor* owner, Actor* wearer);
 	void drop(Actor* owner, Actor* wearer);
 };
 
-class Healer: public Pickable {
+class Potion: public Pickable {
  public:
-	Healer(float amt);
+        enum Color {CYAN, VERMILLION, AQUAMARINE, BLACK, MIDNIGHT_BLUE, COPPER, NUM_COLORS};
+	static std::map<Color, Effect::EffectType> potionNames;
 	
+	Potion();
+
+	static void assignColors();
+	static void learnColor(Color c);
+	static bool colorIsKnown(Color c);
+	void update(Actor* owner, Actor* wearer);
 	bool use(Actor* owner, Actor* wearer);
+	std::string getName();
 
  private:
+	static std::vector<Color> knownColors;
+        Color color;
 	int amt;
 };
-
-/*
-class StyxRifle: public Pickable {
- public:
-	float range, damage;
-	float ammo;
-	float maxAmmo;
-
-	StyxRifle(float range, float damage, int ammo);
-
-        bool use(Actor* owner, Actor* wearer);
-};
-
-class Crossbow: public StyxRifle {
- public:
-        Crossbow(float range, float distance, int ammo);
-
-	bool use(Actor* owner, Actor*  wearer);
-};
-*/
 
 #endif

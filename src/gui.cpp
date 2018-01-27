@@ -1,36 +1,32 @@
 #include <algorithm>
+#include <string.h>
 #include "main.h"
 #include "gui.h"
 #include "map.h"
 #include "actor.h"
 #include "destructible.h"
 #include "attacker.h"
+#include "ai.h"
 #include "effect.h"
-// TODO: fix message delay
-static const int PANEL_HEIGHT = 7;
+
 static const int BAR_WIDTH = 15;
+static const int DATA_CONSOLE_WIDTH = BAR_WIDTH*2;
 static const int MSG_X = 1;
-static const int MSG_HEIGHT = PANEL_HEIGHT-1;
 
 Gui::Gui() {
 	dataConsole = new TCODConsole(BAR_WIDTH*2, engine.getScreenHeight());
-	messageConsole = new TCODConsole(engine.getScreenWidth(), PANEL_HEIGHT);
+	messageConsole = new TCODConsole(engine.getScreenWidth()-BAR_WIDTH*2, 3);
 }
 
 Gui::~Gui() {
+        clearMessages();
 	delete dataConsole;
 	delete messageConsole;
-        clear();
 }
 
-void Gui::clear() {
-	log.clear();
+void Gui::clearMessages() {
+	messages.clear();
 }
-
-Gui::Message::Message(std::string text, const TCODColor& color):
-	text(text), color(color) {}
-
-Gui::Message::~Message() {}
 
 void Gui::render() {
 	dataConsole->setDefaultBackground(TCODColor::black);
@@ -39,17 +35,10 @@ void Gui::render() {
 	dataConsole->setDefaultForeground(TCODColor::white);
 	dataConsole->print(0, 0, "Level %i", engine.getLevel());
 	dataConsole->print(1, 1, "Defense: %.1f", engine.player->destructible->getDefense());
-	dataConsole->print(1, 2, "Acc: %.1f", engine.player->attacker->getAccuracy());
-	dataConsole->print(1, 3, "Dmg: %.1f", engine.player->attacker->getPower());
-
-	// print effects acting on player
-	int bar_y = 0;
-	for(Effect* effect : engine.player->effects) {
-		renderBar(0, 5+bar_y, BAR_WIDTH, effect->getName(),
-			  effect->getDuration(), effect->getStartDuration(),
-			  TCODColor::darkRed, TCODColor::darkestRed);
-		bar_y += 2;
-	}
+	dataConsole->print(1, 2, "Regen: %.1f", engine.player->destructible->getRegen());
+	dataConsole->print(1, 3, "Acc: %.1f", engine.player->attacker->getAccuracy());
+	dataConsole->print(1, 4, "Dmg: %.1f", engine.player->attacker->getPower());
+	dataConsole->print(1, 5, "Stealth: %.1f", dynamic_cast<PlayerAi*>(engine.player->ai)->stealth);
 
 	// print the health of visible actors
 	// get visible actors and sort them by proximity to player
@@ -64,34 +53,38 @@ void Gui::render() {
 				< b->getDistance(engine.player->x, engine.player->y);
 		});
 
+	int bar_y = 0;
 	for(Actor* actor : visibleActors) {
-		renderBar(0, 5+bar_y, BAR_WIDTH, actor->getName(),
+		int health_y = 7+bar_y;
+		renderBar(0, health_y, BAR_WIDTH, actor->name,
 			  actor->destructible->getHp(), 
 			  actor->destructible->getMaxHp(), 
 			  TCODColor::darkAzure, TCODColor::darkestAzure);
-		bar_y += 2;
+		// print out any effects on the actor
+		int offset = 0;
+		for(Effect* effect : actor->effects) {
+			renderBar(0, health_y+offset+1, BAR_WIDTH, effect->getName(),
+				  effect->getDuration(), effect->getStartDuration(),
+				  TCODColor::darkRed, TCODColor::darkestRed);
+		        offset++;
+		}
+		
+		bar_y += 2+offset;
 	}
 
+	// print message log	
 	messageConsole->setDefaultBackground(TCODColor::black);
         messageConsole->clear();
 	
-	// the message log
-	int msg_y = 1;
-	float colorCoef = 0.4f; // modifier to make older lines appear to fade
-	for(Message* message : log) {
-		messageConsole->setDefaultForeground(message->color*colorCoef);
-		messageConsole->print(MSG_X, msg_y, message->text.c_str());
-		msg_y++;
-		if(colorCoef < 1.0f) colorCoef+=0.3f;
-	}	
-
-	// renderMouseLook();
+	int i = 0;
+	for(std::string msg : messages)
+		messageConsole->print(MSG_X, i++, msg.c_str());
 	
 	// blit the GUI console on the root console
-	TCODConsole::blit(messageConsole, 0, 0, 100, PANEL_HEIGHT, 
-			  TCODConsole::root, MSG_X, engine.getScreenHeight()-PANEL_HEIGHT);
+	TCODConsole::blit(messageConsole, 0, 0, messageConsole->getWidth(), messageConsole->getHeight(), 
+			  TCODConsole::root, MSG_X, engine.getScreenHeight()-getMessageConsoleHeight());
 
-	TCODConsole::blit(dataConsole, 0, 0, 100, engine.getScreenHeight(), 
+	TCODConsole::blit(dataConsole, 0, 0, dataConsole->getWidth(), dataConsole->getHeight(), 
 			  TCODConsole::root, engine.getScreenWidth()-BAR_WIDTH*1.2, 1);
 }
 
@@ -113,60 +106,10 @@ void Gui::renderBar(int x, int y, int width, std::string name, float value,
 	dataConsole->printEx(x+width/2, y, TCOD_BKGND_NONE, TCOD_CENTER, "%s", name.c_str());
 }
 
-void Gui::renderMouseLook() {
-	// don't render if mouse isn't in FOV
-	if(!engine.map->isInFov(engine.getMouse().cx, engine.getMouse().cy)) return;
-
-	// find all the actors in the cell and list them in a string
-	char buf[128] = "";
-	bool first = true;
-	for(Actor* actor : engine.actors) {
-		// find actors under the mouse cursor
-		if(actor->x == engine.getMouse().cx && actor->y == engine.getMouse().cy) {
-			if(!first) {
-				strcat(buf, ", ");
-			} else {
-				first = false;
-			}
-			strcat(buf, actor->getName().c_str());
-		}
-	}
-
-	// display the list of actors under the mouse cursor
-        messageConsole->setDefaultForeground(TCODColor::lightGrey);
-	messageConsole->print(1, 0, buf);
-}
-
-void Gui::message(MessageType mType, std::string text) {
-	TCODColor color;	
-	// make the message a certain color based on its type
-	switch(mType) {
-	case OBSERVE:
-		color = TCODColor::lightGrey;
-		break;
-	case ACTION:
-		color = TCODColor::darkAzure;
-		break;
-	case ATTACK:
-		color = TCODColor::darkRed;
-		break;
-	}
-
-	std::vector<std::string> strings;
-	std::string::size_type pos = 0;
-	std::string::size_type prev = 0;
-	while((pos = text.find('\n', prev)) != std::string::npos) {
-		strings.push_back(text.substr(prev, pos-prev));
-		prev = pos+1;
-	}
-	strings.push_back(text.substr(prev));
-
-	for(std::string str : strings) {
-		// NOTE: if speed becomes a concern, use a faster strategy for this
-		if(log.size() > MSG_HEIGHT) log.erase(log.begin());
-		Message* msg = new Message(str, color);
-		log.push_back(msg);
-	}
+// add another message unless there's 2 or more already
+void Gui::message(std::string text) {
+	if(messages.size() < 2)
+		messages.push_back(text);
 }
 
 Menu::~Menu() {

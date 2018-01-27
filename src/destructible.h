@@ -8,6 +8,8 @@ class Actor;
 
 class Destructible {
  public:
+	bool invincible;
+	
 	Destructible(float maxHp, float defense, float regen, const TCODColor& corpseColor=TCODColor::darkRed);
 	virtual ~Destructible() {}
 	
@@ -20,6 +22,8 @@ class Destructible {
 	void regenerate();
         float getDefense() const { return defense; }
         void setDefense(float val) { if(val >= 0) defense = val; }
+	float getRegen() const { return regen; }
+	void setRegen(float val) { if(val >= 0) regen = val; }
 	TCODColor getCorpseColor() const { return corpseColor; }
 
  protected:

@@ -4,7 +4,7 @@ OBJS=$(SOURCES:.cpp=.o)
 LIBFLAGS=-Llib libtcod-mingw.dll -static-libgcc -static-libstdc++
 
 src/%.o : src/%.cpp
-	g++ $< -c -o $@ -std=c++11 -Iinclude -Wall -g
+	g++ $< -c -o $@ -std=c++11 -Iinclude -Wall -g -O3
 
 all : gaunt
 
@@ -15,4 +15,4 @@ icon.o : icon.ico icon.rc
 	windres icon.rc icon.o
 
 gaunt : $(OBJS) icon.o
-	g++ $(OBJS) icon.o -o gaunt -Wall -std=c++11 $(LIBFLAGS) -g
+	g++ $(OBJS) icon.o -o gaunt -Wall -std=c++11 $(LIBFLAGS) -g -O3

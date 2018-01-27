@@ -3,23 +3,26 @@
 #include "actor.h"
 #include "ai.h"
 #include "destructible.h"
-#include "gui.h"
 
-Effect::Effect(EffectType type, int duration): type(type), duration(duration), startDuration(duration) {}
+Effect::Effect(EffectType type, int duration): type(type), duration(duration), startDuration(duration) {
+	// make a dummy saved state
+	savedState = new Actor(0, 0, 'D', "dummy actor", TCODColor::lightestRed);
+}
 
 // some things only need to be done once on the target - these go in here
 void Effect::begin(Actor* target) {
-	if(type == POISON) {
-	        engine.gui->message(Gui::ACTION, target->getName() + " has been poisoned!");
-	} else if(type == BLINDNESS) {
-	        engine.gui->message(Gui::ACTION, target->getName() + " can no longer see!");
+	if(type == BLINDNESS) {
 	        engine.renderMap = false; // don't render map except for player
 	} else if(type == CONFUSION) {
-		if(target->ai) {
-		        engine.gui->message(Gui::ACTION, target->getName() + " is confused!");
+		if(target->ai)
 			target->ai->confused = true;
-		}
-	}
+	} else if(type == PROTECTION) {
+	        *savedState = *target;
+		if(target->destructible) target->destructible->invincible = true;
+	} else if(type == WASTING) {
+		*savedState = *target;
+		if(target->destructible) target->destructible->setRegen(0);
+	} 
 }
 
 void Effect::update(Actor* target) {
@@ -27,9 +30,12 @@ void Effect::update(Actor* target) {
 		if(type == POISON) {
 			if(target->destructible) {
 				// poison damages actors proportional to their health and defense
-				target->destructible->takeDamage(target,
-								 target->destructible->getMaxHp()*0.01+target->destructible->getDefense());
+				target->destructible->takeDamage(target, target->destructible->getMaxHp()*0.01
+								 +target->destructible->getDefense());
 			}
+		} else if(type == HEALTH) {
+			if(target->destructible)
+				target->destructible->heal(target->destructible->getMaxHp()/duration);
 		}
 		
 		duration--;
@@ -38,23 +44,33 @@ void Effect::update(Actor* target) {
  
 // return target back to normal state
 void Effect::end(Actor* target) {
-	if(type == POISON) {
-	        engine.gui->message(Gui::ACTION, "The poison acting on " + target->getName() + " wears off.");
-	} else if(type == BLINDNESS) {
-	        engine.gui->message(Gui::ACTION, target->getName() + "\'s sight has returned.");
+        if(type == BLINDNESS) {
 	        engine.renderMap = true; // set mode to render full map again
 	} else if(type == CONFUSION) {
-	        engine.gui->message(Gui::ACTION, target->getName() + " is no longer confused.");
 		target->ai->confused = false;
+	} else if(type == PROTECTION) {
+		if(target->destructible)
+			target->destructible->invincible = savedState->destructible->invincible;
+	} else if(type == WASTING) {
+		if(target->destructible)
+			target->destructible->setRegen(savedState->destructible->getRegen());
 	}
 }
 
-// returns string version of effect name for printing purposes (i.e. in GUI)
+// turns an effect type into a string
+std::string Effect::effectTypeToString(EffectType t) {
+	return Effect(t, 0).getName();
+}
+
+// returns string version of the effect's name for printing purposes (i.e. in GUI)
 std::string Effect::getName() const {
         switch(type) {
 	case POISON: return "Poison";
 	case BLINDNESS: return "Blindness";
 	case CONFUSION: return "Confusion";
+	case PROTECTION: return "Protection";
+	case WASTING: return "Wasting";
+	case HEALTH: return "Health";
 	default: return "Effect";
 	}
 }

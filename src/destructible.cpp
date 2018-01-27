@@ -6,10 +6,11 @@
 #include "map.h"
 
 Destructible::Destructible(float maxHp, float defense, float regen, const TCODColor& corpseColor):
-        defense(defense), maxHp(maxHp), hp(maxHp), regen(regen), corpseColor(corpseColor) {}
+        invincible(false), defense(defense), maxHp(maxHp), hp(maxHp), regen(regen), corpseColor(corpseColor) {}
 
 // take damage and die if needed
 float Destructible::takeDamage(Actor* owner, float damage) {
+	if(invincible) return 0.0;
 	if(defense != 0) damage /= defense;
 
 	hp -= damage;
@@ -42,7 +43,7 @@ MonsterDestructible::MonsterDestructible(float maxHp, float defense, float regen
 	Destructible(maxHp, defense, regen, corpseColor) {}
 
 void MonsterDestructible::die(Actor* owner) {
-        engine.gui->message(Gui::ATTACK, "The " + owner->getName() + " died.");
+        engine.gui->message("The " + owner->name + " dies.");
 	Destructible::die(owner);
 }
 
@@ -50,7 +51,7 @@ PlayerDestructible::PlayerDestructible(float maxHp, float defense, float regen):
 	Destructible(maxHp, defense, regen) {}
 
 void PlayerDestructible::die(Actor* owner) {
-        engine.gui->message(Gui::ATTACK, "You died!");
+        engine.gui->message("You died...");
 	Destructible::die(owner);
         engine.gameStatus = Engine::DEFEAT;
 }

@@ -1,4 +1,5 @@
 #include <cassert>
+#include <algorithm>
 #include "main.h"
 #include "attacker.h"
 #include "actor.h"
@@ -6,10 +7,36 @@
 #include "gui.h"
 #include "map.h"
 
-Attacker::Attacker(float power, float accuracy, std::string action): power(power), accuracy(accuracy), action(action),
+Attacker::Attacker(float power, float accuracy, std::string action): action(action), power(power), accuracy(accuracy),
 								     enchanted(false) {
 	// accuracy must be in range [0..100]
 	assert(accuracy >= 0 && accuracy <= 100);
+}
+
+Attacker::Attacker(const Attacker& other): Attacker(other.getPower(), other.getAccuracy(), other.getAction()) {
+	if(other.isEnchanted()) {
+	        setEffect(other.getEffectType(), other.getEffectDuration());
+	}
+}
+
+Attacker& Attacker::operator=(const Attacker& rhs) {
+	Attacker temp = Attacker(rhs);
+	
+	float _power = temp.getPower();
+	float _acc = temp.getAccuracy();
+	std::string _action = temp.getAction();
+	bool _isEnchanted = temp.isEnchanted();
+	Effect::EffectType _effectType = temp.getEffectType();
+	int _effectDuration = temp.getEffectDuration();
+
+	std::swap(power, _power);
+	std::swap(accuracy, _acc);
+	std::swap(action, _action);
+	std::swap(enchanted, _isEnchanted);
+	std::swap(effectType, _effectType);
+	std::swap(effectDuration, _effectDuration);
+
+	return *this;
 }
 
 void Attacker::setEffect(Effect::EffectType type, int duration) {
@@ -29,10 +56,8 @@ void Attacker::attack(Actor* owner, Actor* target) {
 			}
 			
 			if(dmg > 0.0) {
-				engine.gui->message(Gui::ATTACK, owner->getName() + " " + action + " " + target->getName()
-						    + ", inflicting " +
-						    std::to_string(dmg)
-						    + " damage.");
+				engine.gui->message(owner->name + " " + action + " " + target->name + ".");
+				
 				// put blood splatters everywhere
 				for(int i = -1; i < 2; i++) {
 					for(int j = 0; j < 2; j++) {
@@ -43,11 +68,11 @@ void Attacker::attack(Actor* owner, Actor* target) {
 					}
 				}
 			} else {
-			        engine.gui->message(Gui::ATTACK, owner->getName() + " " + action +
-						    " " + target->getName() + ", but it has no effect!");            
+			        engine.gui->message(owner->name + " " + action +
+						    " " + target->name + ", but it does no damage!");            
 			}
 		} else {
-		        engine.gui->message(Gui::OBSERVE, owner->getName() + " misses " + target->getName() + ".");
+		        engine.gui->message(owner->name + " misses " + target->name + ".");
 		}		
 	} 
 }
