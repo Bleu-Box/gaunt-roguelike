@@ -1,7 +1,7 @@
 # Gaunt
 
 ## About
-Gaunt is a roguelike game I'm developing. It's still in development right now, so it's not quite playable.
+Gaunt is a roguelike game I'm making. It's still in development right now, so it's not quite playable.
 
 ## Controls
 - Move: arrow keys
