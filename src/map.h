@@ -15,7 +15,8 @@ class Map {
 	enum MonsterKind {
 		RAT, KOBOLD, MUSHROOM, BLUE_SHROOM,
 		PURPLE_SHROOM, SLIME, REDCAP, GOBLIN,
-		CENTIPEDE, RED_CENTIPEDE, BRIGHT
+		CENTIPEDE, RED_CENTIPEDE, BRIGHT, NENN,
+		YRCH
 	};
 	
         Map(int width, int height);

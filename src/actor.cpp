@@ -14,10 +14,11 @@
 Actor::Actor(int x, int y, int ch, std::string name, const TCODColor& color):
 	x(x), y(y), ch(ch), blocks(true), color(color),
 	attacker(NULL), destructible(NULL), ai(NULL), pickable(NULL), container(NULL), spreadable(NULL),
-        name(name) {}
+        name(name), resistsMagic(false), nat_defense(0) {}
 
 Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(other.blocks),
-				  color(other.color), name(other.name) {
+				  color(other.color), name(other.name), resistsMagic(other.resistsMagic),
+				  nat_defense(other.nat_defense) {
 	if(other.attacker) {
 		attacker = new Attacker(0, 0, "");
 		*attacker = *other.attacker;
@@ -46,13 +47,6 @@ Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(o
 		spreadable = new Spreadable(0);
 		*spreadable = *other.spreadable;
 	}
-
-	/*
-	if(other.container) {
-		container = new Container(0);
-		*container = *other.container;
-	}
-	*/
 }
   
 Actor::~Actor() {
@@ -72,6 +66,8 @@ Actor& Actor::operator=(const Actor& rhs) {
 	std::swap(y, temp.y);
 	std::swap(ch, temp.ch);
 	std::swap(blocks, temp.blocks);
+	std::swap(resistsMagic, temp.resistsMagic);
+	std::swap(nat_defense, temp.nat_defense);
 	std::swap(color, temp.color);
 	std::swap(name, temp.name);
 	std::swap(attacker, temp.attacker);
@@ -85,6 +81,7 @@ Actor& Actor::operator=(const Actor& rhs) {
 }
 
 void Actor::addEffect(Effect* effect) {
+	if(resistsMagic) return;
 	// if we already have an effect, don't do anything -- otherwise it would cause
 	// unreasonably long-lasting effects
 	for(Effect* e : effects) {
@@ -95,7 +92,22 @@ void Actor::addEffect(Effect* effect) {
 	effect->begin(this);
 	effects.push_back(effect);
 }
- 
+
+void Actor::equipArmor(Actor* armor) {
+	// make sure to unequip any armor we have on first
+	unequipArmor();
+	if(armor->pickable) {
+		Armor* armorPick = dynamic_cast<Armor*>(armor->pickable);
+		if(armorPick != nullptr && destructible) {
+		        destructible->setDefense(nat_defense+armorPick->defense);
+		}
+	}
+}
+
+void Actor::unequipArmor() {
+	if(destructible) destructible->setDefense(nat_defense);
+}
+
 void Actor::render() const {
 	TCODConsole::root->putChar(x, y, ch);
 	TCODConsole::root->setCharForeground(x, y, color);

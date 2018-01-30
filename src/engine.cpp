@@ -12,7 +12,7 @@
 
 Engine::Engine(int screenWidth, int screenHeight): 
 	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(5), turnCount(0),
-	screenWidth(screenWidth), screenHeight(screenHeight), level(0) {
+	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
 	// set font
 	TCODConsole::setCustomFont("./assets/fonts/consolas18x18_gs_tc.png",
 				   TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
@@ -42,12 +42,14 @@ void Engine::init() {
 	// the stairs -- even though they begin w/ a location at (0, 0), the map will put them somewhere else
 	stairs = new Actor(0, 0, '>', "Stairs", TCODColor::yellow);
 	stairs->blocks = false;
+	stairs->resistsMagic = true;
 	actors.push_back(stairs);
 	// TODO: find a better way to make map size based on Gui panel sizes
 	//map = new Map(screenWidth-18, screenHeight-7);
 	map = new Map(screenWidth-gui->getDataConsoleWidth(), screenHeight-gui->getMessageConsoleHeight());
 	
-	gui->message("Welcome to the dungeons of Fyrgenhold!");
+	gui->message("Welcome to the Dungeons of Doom!");
+	gui->message("You should try getting the Amulet of Yendor while you're down here.");
 	gameStatus = STARTUP;
 }
 
@@ -117,6 +119,7 @@ void Engine::sendToBack(Actor* actor) {
 	actors.insert(actors.begin(), actor);
 }
 
+/*
 Actor* Engine::getClosestMonster(int x, int y, float range) const {
 	Actor* closest = NULL;
 	float bestDist = 1E6f; // starts at impossibly high value
@@ -132,6 +135,15 @@ Actor* Engine::getClosestMonster(int x, int y, float range) const {
 	}
 	
 	return closest;
+}
+*/
+
+Actor* Engine::getActorAt(int x, int y) {
+	auto it = std::find_if(actors.begin(), actors.end(), [x, y](Actor* a) {
+			return a->x == x && a->y == y;
+		});
+
+	return *it;
 }
 
 bool Engine::pickTile(int* x, int* y, float maxRange) {

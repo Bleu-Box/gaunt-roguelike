@@ -22,16 +22,6 @@ bool Pickable::pick(Actor* owner, Actor* wearer) {
        return false;
 }
 
-// the only thing to do here (since it's the base class) is to delete owner upon use, which most items do
-bool Pickable::use(Actor* owner, Actor* wearer) {
-	if(wearer->container) {
-		wearer->container->remove(owner);
-		delete owner;
-		return true;
-	}
-	return false;
-}
-
 // drop an item by removing it from wearer's inventory and putting it back into actor list
 void Pickable::drop(Actor* owner, Actor* wearer) {
 	if(wearer->container) {
@@ -42,6 +32,8 @@ void Pickable::drop(Actor* owner, Actor* wearer) {
 	        engine.gui->message(wearer->name + " drops the " + owner->name + ".");
 	}
 }
+
+//// POTION /////////////////////////////////////////
 
 Potion::Potion() {
 	TCODRandom* rand = TCODRandom::getInstance();
@@ -69,12 +61,14 @@ void Potion::assignColors() {
 
 // learn that a certain color means a certain effect
 void Potion::learnColor(Color c) {
-	if(!colorIsKnown(c)) knownColors.push_back(c);
-	for(Actor* item : engine.actors) {
-		if(item->pickable) {
-			Potion* potion = dynamic_cast<Potion*>(item->pickable);
-			if(potion != nullptr) {
-				item->name = potion->getName();
+	if(!colorIsKnown(c)) {
+		knownColors.push_back(c);
+		for(Actor* item : engine.actors) {
+			if(item->pickable) {
+				Potion* potion = dynamic_cast<Potion*>(item->pickable);
+				if(potion != nullptr) {
+					item->name = potion->getName();
+				}
 			}
 		}
 	}
@@ -86,7 +80,7 @@ bool Potion::colorIsKnown(Color c) {
 }
 
 // return the potion's name based on its color/effect type
-std::string Potion::getName() {
+std::string Potion::getName() const {
 	if(colorIsKnown(color)) {
 		return Effect::effectTypeToString(potionNames[color])+" potion";
 	} else {
@@ -97,18 +91,46 @@ std::string Potion::getName() {
 		case BLACK: return "Black potion";
 		case MIDNIGHT_BLUE: return "Midnight blue potion";
 		case COPPER: return "Copper potion";
-		default: return "Colorless potion";	
+		default: return "Strange potion";	
 		}
 	}
 }
 
 // drink a potion and learn what it does
-bool Potion::use(Actor *owner, Actor *wearer) {
+void Potion::quaff(Actor* owner, Actor* wearer) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	Effect* effect = new Effect(potionNames[color], rand->getInt(5, 50));
-	wearer->addEffect(effect);
-	learnColor(color);
 	
-	return Pickable::use(owner, wearer);
+	wearer->addEffect(effect);	
+	learnColor(color);
+	use(owner, wearer);
 }
+
+// splash a space with the potion, and affect any actors at that location
+void Potion::splash(Actor* owner, Actor* wearer, int x, int y) {
+	TCODRandom* rand = TCODRandom::getInstance();
+	Effect* effect = new Effect(potionNames[color], rand->getInt(5, 50));
+
+	Actor* actor = engine.getActorAt(x, y);
+			
+	if(actor) {
+		learnColor(color);
+		actor->addEffect(effect);
+		engine.gui->message("The "+getName()+" splashes all over the "+actor->name+"!");
+	}
+
+	use(owner, wearer);
+}
+
+// get rid of the potion upon use
+void Potion::use(Actor* owner, Actor* wearer) {
+	if(wearer->container) {
+		wearer->container->remove(owner);
+		delete owner;
+	}
+}
+
+/////////// ARMOR ////////////////////
+Armor::Armor(float defense): defense(defense) {}
+
 

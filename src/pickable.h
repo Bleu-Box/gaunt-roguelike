@@ -13,7 +13,6 @@ class Pickable {
  public:
 	virtual ~Pickable() {};
 
-	virtual bool use(Actor* owner, Actor* wearer);
 	bool pick(Actor* owner, Actor* wearer);
 	void drop(Actor* owner, Actor* wearer);
 };
@@ -28,14 +27,22 @@ class Potion: public Pickable {
 	static void assignColors();
 	static void learnColor(Color c);
 	static bool colorIsKnown(Color c);
-	void update(Actor* owner, Actor* wearer);
-	bool use(Actor* owner, Actor* wearer);
-	std::string getName();
+        void quaff(Actor* owner, Actor* wearer);
+        void splash(Actor* owner, Actor* wearer, int x, int y);
+	std::string getName() const;
 
  private:
 	static std::vector<Color> knownColors;
         Color color;
-	int amt;
+
+	void use(Actor* owner, Actor* wearer);
+};
+
+class Armor: public Pickable {
+ public:
+	float defense;
+	
+	Armor(float defense);
 };
 
 #endif

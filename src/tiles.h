@@ -27,7 +27,7 @@ namespace tiles {
 	const Tile ROCK_TILE = Tile('#', false, false, TCODColor::black);
 	// ground
 	const Tile FLOOR_TILE = Tile('.', true, true);
-	const Tile TUNNEL_TILE = Tile('#', true, true);
+	const Tile TUNNEL_TILE = Tile(TCOD_CHAR_BLOCK2, true, true);
 	// walls
 	const Tile TOP_WALL_TILE = Tile(TCOD_CHAR_HLINE, false, false);
 	const Tile SIDE_WALL_TILE = Tile(TCOD_CHAR_VLINE, false, false);

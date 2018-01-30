@@ -11,8 +11,8 @@ Effect::Effect(EffectType type, int duration): type(type), duration(duration), s
 
 // some things only need to be done once on the target - these go in here
 void Effect::begin(Actor* target) {
-	if(type == BLINDNESS) {
-	        engine.renderMap = false; // don't render map except for player
+	if(type == BLINDNESS && target == engine.player) {
+	        engine.renderMap = false; // don't render map
 	} else if(type == CONFUSION) {
 		if(target->ai)
 			target->ai->confused = true;
@@ -44,7 +44,7 @@ void Effect::update(Actor* target) {
  
 // return target back to normal state
 void Effect::end(Actor* target) {
-        if(type == BLINDNESS) {
+        if(type == BLINDNESS && target == engine.player) {
 	        engine.renderMap = true; // set mode to render full map again
 	} else if(type == CONFUSION) {
 		target->ai->confused = false;

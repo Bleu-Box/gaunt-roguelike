@@ -69,7 +69,7 @@ void PlayerAi::update(Actor* owner) {
 	}
 }
 
-// this returns true if a valid key was pressed (i.e. 'i' for inventory), and false otherwise
+// this returns true if a valid key was pressed, and false otherwise
 bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 	switch(ascii) {
 	// 'g' = pick up item 
@@ -97,17 +97,70 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		return found;
 	}
 		break;
-	// 'i' = show inventory
+
+	// show the inventory
 	case 'i': {
-		Actor* actor = getFromInventory(owner);
+		// don't actually get anything, just take a peek
+	        getFromInventory(owner);
+	}
+		break;
+		
+	// 'q' = quaff a potion
+	case 'q': {
+		engine.gui->message("What to quaff?");
+		// only pull up potions on the inventory display
+		Actor* actor = getFromInventory(owner, [](Actor* item) {
+				return item && item->pickable && dynamic_cast<Potion*>(item->pickable) != nullptr;
+			});
+		
 		if(actor) {
-			actor->pickable->use(actor, owner);
+			Potion* potion = dynamic_cast<Potion*>(actor->pickable);
+		        potion->quaff(actor, owner);
 		        return true;
 		}
 	}
 		break;
+
+	// throw a potion
+	case 't': {
+		Actor* actor = getFromInventory(owner, [](Actor* item) {
+				return item && item->pickable && dynamic_cast<Potion*>(item->pickable) != nullptr;
+			});
+		
+		if(actor) {
+			int x, y;
+			Potion* potion = dynamic_cast<Potion*>(actor->pickable);
+			engine.pickTile(&x, &y, engine.getFovRadius());
+		        potion->splash(actor, owner, x, y);
+		        return true;
+		}
+	}
+		break;
+	// equip armor
+	case 'a': {
+		Actor* actor = getFromInventory(owner, [](Actor* item) {
+				return item && item->pickable && dynamic_cast<Armor*>(item->pickable) != nullptr;
+			});
+		
+		if(actor) {
+		        owner->equipArmor(actor);
+			engine.gui->message(owner->name+" equips "+actor->name+".");
+		        return true;
+		}	
+	}
+		break;
+
+	// unequip armor
+	case 'A': {
+		owner->unequipArmor();
+		engine.gui->message(owner->name+" unequips armor.");
+		return true;
+	}
+		break;
+		
         // drop an item
 	case 'd': {
+		engine.gui->message("What to drop?");
 		Actor* actor = getFromInventory(owner);
 		if(actor) {
 		        actor->pickable->drop(actor, owner);
@@ -151,8 +204,8 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		return true;
 	}
 		break;
-	// 'r' = rest 1 turn
-	case 'r': {
+	// rest 1 turn
+	case '.': {
 	        return true;
 	}
 		break;
@@ -190,21 +243,24 @@ bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 	return true;
 }
 
-Actor* PlayerAi::getFromInventory(Actor* owner) {
+// Lets player pick an item from the inventory. An optional predicate can be applied to only give certain options
+// (i.e. only show potions)
+Actor* PlayerAi::getFromInventory(Actor* owner, std::function<bool(Actor*)> predicate) {
 	// static variables only need to be made the first time they're needed
-	static const int INV_WIDTH = 28;
-	static const int INV_HEIGHT = 50;
+	static const int INV_WIDTH = engine.getScreenWidth()/1.5;
+	static const int INV_HEIGHT = engine.getScreenHeight()/1.5;
 	static TCODConsole console(INV_WIDTH, INV_HEIGHT);
-
-	console.setDefaultForeground(TCODColor::white);
+	
 	console.printFrame(0, 0, INV_WIDTH, INV_HEIGHT, true, TCOD_BKGND_DEFAULT, "INVENTORY");
 
 	int shortcut = 'a';
 	int y = 1;
 	for(Actor* actor : owner->container->inventory) {
-		console.print(2, y, "(%c) %s", shortcut, actor->name.c_str());
-		y++;
-		shortcut++;
+		if(predicate(actor)) {
+			console.print(2, y, "(%c) %s", shortcut, actor->name.c_str());
+			y++;
+			shortcut++;
+		}
 	}
 
 	// blit the inventory console on the root console
@@ -226,7 +282,7 @@ Actor* PlayerAi::getFromInventory(Actor* owner) {
 		}
 	}
 	
-	return NULL;
+	return nullptr;
 }
 
 MonsterAi::MonsterAi(int speed, int range, bool opensDoors, std::function<void(MonsterAi*, Actor*)> behavior):

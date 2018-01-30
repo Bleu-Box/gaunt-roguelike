@@ -31,6 +31,7 @@ class Engine {
 
 	void sendToBack(Actor* actor);
 	Actor* getClosestMonster(int x, int y, float range) const;
+	Actor* getActorAt(int x, int y);
 	bool pickTile(int* x, int* y, float maxRange = 0.0f);
 	void update();
 	void render();
@@ -45,7 +46,7 @@ class Engine {
 	TCOD_key_t getLastKey() const { return lastKey; }
 	TCOD_mouse_t getMouse() const { return mouse; }
 	int getLevel() const { return level; }
-	int getTurnCount() const { return turnCount; }
+	int getTurnCount() const { return turnCount; }	
 	
  private:
 	std::vector<Actor*> spawnQueue;

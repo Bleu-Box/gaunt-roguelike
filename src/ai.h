@@ -29,7 +29,8 @@ class PlayerAi: public Ai {
  protected:	
 	bool moveOrAttack(Actor* owner, int targetx, int targety);
 	bool handleActionKey(Actor* owner, int ascii);
-	Actor* getFromInventory(Actor* owner);
+	Actor* getFromInventory(Actor* owner, std::function<bool(Actor*)> predicate =
+				[](Actor* _) { return true; });
 };
 
 class MonsterAi: public Ai {

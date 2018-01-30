@@ -28,6 +28,8 @@ class Actor {
 	Spreadable* spreadable; // allows actor to spread children around itself (i.e. fire spreading)
 	std::vector<Effect*> effects; // magic effects acting on actors
 	std::string name;
+	bool resistsMagic;
+	float nat_defense;
 	
 	Actor(int x, int y, int ch, std::string name, const TCODColor& color);
 	Actor(const Actor& other);
@@ -39,6 +41,8 @@ class Actor {
 	bool moveOrAttack(int x, int y);
 	float getDistance(int cx, int cy) const;
 	void addEffect(Effect* effect);
+	void equipArmor(Actor* armor);
+	void unequipArmor();	
 };
 
 #endif

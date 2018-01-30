@@ -70,8 +70,8 @@ void Map::init() {
 			int y = rand->getInt(room.y1+1, room.y2-1);
 		        spawnHorde(x, y);
 		}
-
-		if(true || rand->getInt(0, 100) < 30) {
+	        
+		if(rand->getInt(0, 100) < 30) {
 			int x = rand->getInt(room.x1+1, room.x2-1);
 			int y = rand->getInt(room.y1+1, room.y2-1);
 		        addItem(x, y);
@@ -164,19 +164,22 @@ void Map::digRoom(Room room) {
 // use A* to find a path between two rooms, and then dig it
 void Map::digTunnel(Room& from, Room& to) {
 	TCODRandom* rand = TCODRandom::getInstance();
-	
+	// randomly choose tunnel openings
 	int startx = rand->getInt(from.x1+2, from.x2-2);
 	int starty = rand->getInt(0, 1) == 0? from.y1 : from.y2;
 	int endx = rand->getInt(0, 1) == 0? to.x1 : to.x2;
 	int endy = rand->getInt(to.y1+1, to.y2-1);
+
 	// there's a random chance of doors spawning instead of a plain opening
 	// doors start out open so the pathfinding algorithm can go through them
 	if(rand->getInt(0, 100) < 40) setTile(startx, starty, tiles::OPEN_DOOR_TILE);
 	else setTile(startx, starty, tiles::FLOOR_TILE);
-        if(rand->getInt(0, 100) < 40) setTile(endx, endy, tiles::OPEN_DOOR_TILE);
+	if(rand->getInt(0, 100) < 40) setTile(endx, endy, tiles::OPEN_DOOR_TILE);	
 	else setTile(endx, endy, tiles::FLOOR_TILE);
 	
-	TCODPath path = findPath(startx, starty, endx, endy, 0);	
+	// calculate the path
+	TCODPath path = findPath(startx, starty, endx, endy, 0);
+	// dig the tunnel
 	for(int i = 0; i < path.size(); i++) {
 		int x, y;
 		path.get(i, &x, &y);
@@ -251,10 +254,12 @@ bool Map::canWalk(int x, int y) const  {
 }
 
 void Map::setTileForeground(int x, int y, const TCODColor& color) {
+	if(x < 0 || x >= width || y < 0 || y >= height) return;
 	tiles[x+y*width]->fgColor = color;
 }
 
 void Map::setTileBackground(int x, int y, const TCODColor& color) {
+	if(x < 0 || x >= width || y < 0 || y >= height) return;
 	tiles[x+y*width]->bgColor = color;
 }
 
@@ -290,7 +295,7 @@ bool Map::isExplored(int x, int y) const {
 }
 
 bool Map::isInFov(int x, int y) const {
-	if (x < 0 || x >= width || y < 0 || y >= height) return false;
+	if(x < 0 || x >= width || y < 0 || y >= height) return false;
 	
 	if(map->isInFov(x, y)) {
 		tiles[x+y*width]->explored = true;
@@ -327,12 +332,21 @@ void Map::addItem(int x, int y) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	int choice = rand->getInt(0, 100);
 
-	Potion* pick = new Potion();
-	Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::yellow);
-	potion->blocks = false;
-	potion->pickable = pick;
-	engine.actors.push_back(potion);
-	engine.sendToBack(potion);
+	if(choice < 50) {
+		Potion* pick = new Potion();
+		Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::yellow);
+		potion->blocks = false;
+		potion->pickable = pick;
+		engine.actors.push_back(potion);
+		engine.sendToBack(potion);
+	} else {
+		Armor* pick = new Armor(10);
+		Actor* armor = new Actor(x, y, ']', "Chain mail", TCODColor::yellow);
+	        armor->blocks = false;
+	        armor->pickable = pick;
+		engine.actors.push_back(armor);
+		engine.sendToBack(armor);
+	}
 }
 
 // returns a monster to spawn based on level and randomness
@@ -341,7 +355,7 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	std::vector<MonsterKind> candidates;
 	int level = engine.getLevel();
 	
-	candidates.push_back(RAT);
+	if(level >= 1 && level <= 5) candidates.push_back(RAT);
 	if(level >= 2) {
 		std::vector<MonsterKind> shroomKinds = {MUSHROOM, BLUE_SHROOM, PURPLE_SHROOM};
 		candidates.push_back(shroomKinds[rand->getInt(0, shroomKinds.size()-1)]);
@@ -353,9 +367,11 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	if(level >= 5) candidates.push_back(CENTIPEDE);
 	if(level >= 6 && rand->getInt(0, 100) < 30) candidates.push_back(RED_CENTIPEDE);
 	if(level >= 7) candidates.push_back(GOBLIN);
-	if(level >= 8 && rand->getInt(0, 100) < 10) candidates.push_back(BRIGHT);
-	// bias spawning towards higher-level enemies
-	return candidates[rand->getInt(0, candidates.size()-1, candidates.size()-2)];
+	if(level >= 8) candidates.push_back(NENN);
+	if(level >= 9) candidates.push_back(YRCH);
+	if(level >= 10 && rand->getInt(0, 100) < 10) candidates.push_back(BRIGHT);
+
+	return candidates[rand->getInt(0, candidates.size()-1)];
 }
 
 // based on the supplied monster type, create a certain monster
@@ -405,7 +421,7 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 	case KOBOLD: {
 		Actor* kobold = new Actor(x, y, 'k', "Kobold", TCODColor::amber*0.5);
 		kobold->attacker = new Attacker(5, 50, "hits");	
-	        kobold->destructible = new MonsterDestructible(7, 3, 1);
+	        kobold->destructible = new MonsterDestructible(7, 3, 1, TCODColor::darkerGrey);
 	        kobold->ai = new MonsterAi(1, 4, true);
 		engine.actors.push_back(kobold);
 		break;
@@ -458,13 +474,33 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 
 	case GOBLIN: {
 		Actor* goblin = new Actor(x, y, 'g', "Goblin", TCODColor::darkGreen);
-		goblin->attacker = new Attacker(7, 80, "stabs");
-		goblin->destructible = new MonsterDestructible(10, 2, 1, TCODColor::black);
+		goblin->attacker = new Attacker(7, 60, "stabs");
+		goblin->destructible = new MonsterDestructible(10, 2, 1, TCODColor::darkerGrey);
 	        goblin->ai = new MonsterAi(1, 10, true);
 		engine.actors.push_back(goblin);
 		break;
 	}
+	// a special type of magic-resistant goblin
+	case NENN: {
+		Actor* nenn = new Actor(x, y, 'n', "Nenn", TCODColor::darkHan);
+		nenn->attacker = new Attacker(7, 60, "stabs");
+	        nenn->destructible = new MonsterDestructible(10, 2, 1, TCODColor::darkerGrey);
+	        nenn->ai = new MonsterAi(1, 10, true);
+		nenn->resistsMagic = true;
+		engine.actors.push_back(nenn);
+		break;
+	}
 
+	case YRCH: {
+		Actor* yrch = new Actor(x, y, 'y', "Yrch", TCODColor::darkGrey);
+	        yrch->attacker = new Attacker(12, 80, "stabs");
+		if(rand->getInt(0, 100) <= 40) yrch->attacker->setEffect(Effect::POISON, 5);
+	        yrch->destructible = new MonsterDestructible(10, 5, 1.5, TCODColor::darkerGrey);
+	        yrch->ai = new MonsterAi(1, 10, true);
+		engine.actors.push_back(yrch);
+		break;
+	}
+		
 	case BRIGHT: {
 		Actor* bright = new Actor(x, y, 'b', "Bright", TCODColor::lightYellow);
 		bright->attacker = new Attacker(10, 70, "bites");

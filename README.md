@@ -1,7 +1,7 @@
 # Gaunt
 
 ## About
-Gaunt is a roguelike game I'm developing. It's still in development right now, so it's not quite playable.
+Gaunt is a roguelike game I'm making. It's still in development right now, so it's not quite playable.
 
 ## Controls
 - Move: arrow keys
@@ -24,6 +24,8 @@ The player will encounter a variety of monsters in the game. Here are some of th
 - Centipede (orange 'c'): Centipedes are fast, fairly strong, and have a nasty sting.
 - Red Centipede (red 'c'): Red centipedes are like normal centipedes, but their sting also poisons the player.
 - Goblin (green 'g'): Goblins are like kobolds, but stronger.
+- Nenn (bluish 'n'): Nenns are similar to goblins, but resist magic.
+- Yrch (grey 'y'): Yrches are stronger goblin variants that sometimes wield a poison blade.
 - Bright (yellow 'b'): Brights are terrifyingly fast and strong. It's rare to survive an encounter with one.
 
 ## Magical Effects
@@ -34,6 +36,9 @@ The player will encounter a variety of monsters in the game. Here are some of th
 - Protection: Causes temporary immunity to attack
 - Health: Increases health over time
 
-# Dungeon Features
+## Armor
+- Chain mail
+
+## Dungeon Features
 - Doors (brown '+' when closed; ''' when open): Many monsters can't open doors.
 - Heroes' Bane (brownish '"'): This fungus grows in patches on the lower levels. Spilling blood onto it will spawn redcaps.
