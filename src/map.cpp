@@ -334,14 +334,14 @@ void Map::addItem(int x, int y) {
 
 	if(choice < 50) {
 		Potion* pick = new Potion();
-		Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::yellow);
+		Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::darkCyan);
 		potion->blocks = false;
 		potion->pickable = pick;
 		engine.actors.push_back(potion);
 		engine.sendToBack(potion);
 	} else {
-		Armor* pick = new Armor(10);
-		Actor* armor = new Actor(x, y, ']', "Chain mail", TCODColor::yellow);
+		Armor* pick = new Armor();
+		Actor* armor = new Actor(x, y, ']', pick->getName(), TCODColor::darkCyan);
 	        armor->blocks = false;
 	        armor->pickable = pick;
 		engine.actors.push_back(armor);

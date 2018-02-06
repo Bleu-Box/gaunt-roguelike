@@ -1,17 +1,21 @@
 // implementation for Destructibles
 #include "main.h"
 #include "destructible.h"
+#include "pickable.h"
 #include "actor.h"
 #include "gui.h"
 #include "map.h"
 
 Destructible::Destructible(float maxHp, float defense, float regen, const TCODColor& corpseColor):
-        invincible(false), defense(defense), maxHp(maxHp), hp(maxHp), regen(regen), corpseColor(corpseColor) {}
+        invincible(false), defense(defense), armorDefense(0), maxHp(maxHp), hp(maxHp), regen(regen), corpseColor(corpseColor) {}
 
 // take damage and die if needed
 float Destructible::takeDamage(Actor* owner, float damage) {
+	// the total defense is based on defense and armor
+	float totalDefense = getDefense();
+	
 	if(invincible) return 0.0;
-	if(defense != 0) damage /= defense;
+	if(totalDefense != 0) damage /= totalDefense;
 
 	hp -= damage;
 	if(hp <= 0) die(owner); 
@@ -37,6 +41,10 @@ float Destructible::heal(float amt) {
 
 void Destructible::regenerate() {
 	heal(regen);
+}
+
+void Destructible::equipArmor(Armor* armor) {
+	armorDefense = armor->defense;
 }
 
 MonsterDestructible::MonsterDestructible(float maxHp, float defense, float regen, const TCODColor& corpseColor):

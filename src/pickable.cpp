@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <vector>
 #include <cassert>
+#include <math.h>
 #include "lib/libtcod.hpp"
 #include "main.h"
 #include "pickable.h"
@@ -131,6 +132,29 @@ void Potion::use(Actor* owner, Actor* wearer) {
 }
 
 /////////// ARMOR ////////////////////
-Armor::Armor(float defense): defense(defense) {}
+Armor::Armor(): equipped(false) {
+	// based on a random number, set the defense and name of the armor
+	TCODRandom* rand = TCODRandom::getInstance();
+	int n = rand->getInt(0, 9);
+	std::string armorType; // the main part of the name
+		
+	switch(n) {
+	case 0: armorType = "leather"; break;
+	case 1: armorType = "tin"; break;
+	case 2: armorType = "bronze"; break;
+	case 3: armorType = "chain mail"; break;
+	case 4: armorType = "mithril"; break;
+	case 5: armorType = "iron"; break;
+	case 6: armorType = "steel"; break;
+	case 7: armorType = "plate mail"; break;
+	case 8: armorType = "corundum"; break;
+	case 9: armorType = "diamond"; break;
+	}
 
-
+	weight = armorType == "mithril"? 2 : n*2;
+	defense = (n+2)*5;
+	// now compute the full name, which includes rounded defense/weight info
+	std::string roundedWeight = std::to_string(round(weight*100)/100).substr(0, 4);
+	std::string roundedDefense = std::to_string(round(defense*100)/100).substr(0, 4);
+	name = "+"+roundedDefense+" "+armorType+" armor"+"<"+roundedWeight+">";
+}

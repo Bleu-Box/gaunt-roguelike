@@ -14,11 +14,11 @@
 Actor::Actor(int x, int y, int ch, std::string name, const TCODColor& color):
 	x(x), y(y), ch(ch), blocks(true), color(color),
 	attacker(NULL), destructible(NULL), ai(NULL), pickable(NULL), container(NULL), spreadable(NULL),
-        name(name), resistsMagic(false), nat_defense(0) {}
+        name(name), resistsMagic(false), stren(1.0), encumberment(0.0) {}
 
 Actor::Actor(const Actor& other): x(other.x), y(other.y), ch(other.ch), blocks(other.blocks),
 				  color(other.color), name(other.name), resistsMagic(other.resistsMagic),
-				  nat_defense(other.nat_defense) {
+				  stren(other.stren), encumberment(other.encumberment) {
 	if(other.attacker) {
 		attacker = new Attacker(0, 0, "");
 		*attacker = *other.attacker;
@@ -67,7 +67,8 @@ Actor& Actor::operator=(const Actor& rhs) {
 	std::swap(ch, temp.ch);
 	std::swap(blocks, temp.blocks);
 	std::swap(resistsMagic, temp.resistsMagic);
-	std::swap(nat_defense, temp.nat_defense);
+	std::swap(stren, temp.stren);
+	std::swap(encumberment, temp.encumberment);
 	std::swap(color, temp.color);
 	std::swap(name, temp.name);
 	std::swap(attacker, temp.attacker);
@@ -99,13 +100,23 @@ void Actor::equipArmor(Actor* armor) {
 	if(armor->pickable) {
 		Armor* armorPick = dynamic_cast<Armor*>(armor->pickable);
 		if(armorPick != nullptr && destructible) {
-		        destructible->setDefense(nat_defense+armorPick->defense);
+			armorPick->equipped = true;
+		        destructible->equipArmor(armorPick);
+			// encumberment is based on armor's weight vs. actor's strength
+			float weightDiff = armorPick->weight-stren;
+			encumberment = weightDiff > 0? weightDiff : 0;
 		}
 	}
 }
 
 void Actor::unequipArmor() {
-	if(destructible) destructible->setDefense(nat_defense);
+	encumberment = 0; 
+	if(destructible) destructible->unequipArmor();
+	// go through inventory and make sure all armor isn't equipped
+	for(Actor* item : container->inventory) {
+		Armor* armorPick = dynamic_cast<Armor*>(item->pickable);
+		if(armorPick != nullptr) armorPick->equipped = false;
+	}
 }
 
 void Actor::render() const {

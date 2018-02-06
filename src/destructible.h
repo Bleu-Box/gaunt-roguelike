@@ -5,6 +5,7 @@
 #include "lib/libtcod.hpp"
 
 class Actor;
+class Armor;
 
 class Destructible {
  public:
@@ -20,14 +21,18 @@ class Destructible {
 	int getMaxHp() const { return maxHp; }
 	int getHp() const { return hp; }
 	void regenerate();
-        float getDefense() const { return defense; }
+        float getDefense() const { return defense+armorDefense; }
         void setDefense(float val) { if(val >= 0) defense = val; }
 	float getRegen() const { return regen; }
 	void setRegen(float val) { if(val >= 0) regen = val; }
 	TCODColor getCorpseColor() const { return corpseColor; }
+	// getting/setting armor is done with more fitting names
+	void equipArmor(Armor* armor);
+	void unequipArmor() { armorDefense = 0; }
 
  protected:
-	float defense; // hit points deflected
+	float defense; // `defense' is the natural defense level,  
+	float armorDefense; // and `armorDefense' is extra defense granted by armor
 	float maxHp;
 	float hp;
 	float regen;

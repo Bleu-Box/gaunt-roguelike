@@ -29,7 +29,8 @@ class Actor {
 	std::vector<Effect*> effects; // magic effects acting on actors
 	std::string name;
 	bool resistsMagic;
-	float nat_defense;
+	float stren;
+	float encumberment;
 	
 	Actor(int x, int y, int ch, std::string name, const TCODColor& color);
 	Actor(const Actor& other);

@@ -41,8 +41,15 @@ class Potion: public Pickable {
 class Armor: public Pickable {
  public:
 	float defense;
+	float weight;
+	bool equipped;
 	
-	Armor(float defense);
+	Armor();
+
+	std::string getName() const { return name; }
+
+ private:
+	std::string name;
 };
 
 #endif

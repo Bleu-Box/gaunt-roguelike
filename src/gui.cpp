@@ -31,14 +31,21 @@ void Gui::clearMessages() {
 void Gui::render() {
 	dataConsole->setDefaultBackground(TCODColor::black);
 	dataConsole->clear();
+ 
+	int data_y = 0;
+	#if DEBUG_MODE == 1
+	dataConsole->setDefaultForeground(TCODColor::red);
+	dataConsole->print(0, data_y++, "DEBUG MODE");
+	#endif
 	// print stats
 	dataConsole->setDefaultForeground(TCODColor::white);
-	dataConsole->print(0, 0, "Level %i", engine.getLevel());
-	dataConsole->print(1, 1, "Defense: %.1f", engine.player->destructible->getDefense());
-	dataConsole->print(1, 2, "Regen: %.1f", engine.player->destructible->getRegen());
-	dataConsole->print(1, 3, "Acc: %.1f", engine.player->attacker->getAccuracy());
-	dataConsole->print(1, 4, "Dmg: %.1f", engine.player->attacker->getPower());
-	dataConsole->print(1, 5, "Stealth: %.1f", dynamic_cast<PlayerAi*>(engine.player->ai)->stealth);
+	dataConsole->print(0, data_y++, "Level %i", engine.getLevel());
+	dataConsole->print(1, data_y++, "Defense: %.1f", engine.player->destructible->getDefense());
+	dataConsole->print(1, data_y++, "Regen: %.1f", engine.player->destructible->getRegen());
+	dataConsole->print(1, data_y++, "Stren: %.1f", engine.player->stren);
+	dataConsole->print(1, data_y++, "Acc: %.1f", engine.player->attacker->getAccuracy());
+	dataConsole->print(1, data_y++, "Dmg: %.1f", engine.player->attacker->getPower());
+	dataConsole->print(1, data_y++, "Stealth: %.1f", dynamic_cast<PlayerAi*>(engine.player->ai)->stealth);
 
 	// print the health of visible actors
 	// get visible actors and sort them by proximity to player
@@ -53,9 +60,9 @@ void Gui::render() {
 				< b->getDistance(engine.player->x, engine.player->y);
 		});
 
-	int bar_y = 0;
+	int bar_y = 1;
 	for(Actor* actor : visibleActors) {
-		int health_y = 7+bar_y;
+		int health_y = data_y+bar_y;
 		renderBar(0, health_y, BAR_WIDTH, actor->name,
 			  actor->destructible->getHp(), 
 			  actor->destructible->getMaxHp(), 

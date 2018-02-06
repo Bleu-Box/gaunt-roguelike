@@ -13,7 +13,7 @@
 #include "tiles.h"
 
 Ai::Ai(int speed): confused(false), speed(speed) {}
-  
+
 PlayerAi::PlayerAi(int stealth): Ai(1), stealth(stealth) {}
 
 void PlayerAi::update(Actor* owner) {
@@ -115,7 +115,7 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		
 		if(actor) {
 			Potion* potion = dynamic_cast<Potion*>(actor->pickable);
-		        potion->quaff(actor, owner);
+		        if(potion) potion->quaff(actor, owner);
 		        return true;
 		}
 	}
@@ -163,6 +163,10 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		engine.gui->message("What to drop?");
 		Actor* actor = getFromInventory(owner);
 		if(actor) {
+			// make sure to unequip equipped armor if it's being dropped
+			Armor* armorPick = dynamic_cast<Armor*>(actor->pickable);
+			if(armorPick != nullptr && armorPick->equipped) owner->unequipArmor();
+			
 		        actor->pickable->drop(actor, owner);
 		        return true;
 		}
@@ -225,6 +229,8 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 }
  
 bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
+	TCODRandom* rand = TCODRandom::getInstance();
+		
 	if(speed == 0 || engine.map->isWall(targetx, targety)) return false;
 	// look for living actors to attack
 	for(Actor* actor : engine.actors) {
@@ -238,9 +244,15 @@ bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 	}
 
 	// return true if we've gotten far enough to update the location
-	owner->x = targetx;
-	owner->y = targety;
-	return true;
+	// also, encumberment plays a role in whether or not we move
+	if(rand->getInt(0, 100) <= owner->encumberment*5) {
+		engine.gui->message(owner->name+" stumbles.");
+		return false;
+	} else {
+		owner->x = targetx;
+		owner->y = targety;
+		return true;
+	}
 }
 
 // Lets player pick an item from the inventory. An optional predicate can be applied to only give certain options
@@ -259,8 +271,8 @@ Actor* PlayerAi::getFromInventory(Actor* owner, std::function<bool(Actor*)> pred
 		if(predicate(actor)) {
 			console.print(2, y, "(%c) %s", shortcut, actor->name.c_str());
 			y++;
-			shortcut++;
 		}
+		shortcut++;
 	}
 
 	// blit the inventory console on the root console
@@ -308,6 +320,9 @@ void MonsterAi::spread(Actor* owner) {
 }
 
 void MonsterAi::moveOrAttack(Actor* owner, int targetx, int targety) {
+	TCODRandom* rand = TCODRandom::getInstance();
+	// encumberment plays a role in whether or not we can actually move
+	if(rand->getInt(0, 100) <= owner->encumberment*5) return;
 	// if monster is confused, just move around randomly and don't do anything else
 	if(confused) {
 		TCODRandom* rand = TCODRandom::getInstance();

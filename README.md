@@ -9,8 +9,12 @@ Gaunt is a roguelike game I'm making. It's still in development right now, so it
 - Open door: o+[arrow key]
 - Pick up item: g
 - Drop item: d+[item letter]
-- Access Inventory: i
 - Use item: i+[item letter]
+- Rest a turn: .
+- Quaff a potion: q+[item letter]
+- Throw a potion: t+[item letter]+[mouse click at destination]
+- Equip armor: a+[item letter]
+- Unequip armor: A
 
 ## Monsters
 The player will encounter a variety of monsters in the game. Here are some of them:
@@ -37,7 +41,7 @@ The player will encounter a variety of monsters in the game. Here are some of th
 - Health: Increases health over time
 
 ## Armor
-- Chain mail
+- Chain mail, Mithril, Iron Armor, etc.
 
 ## Dungeon Features
 - Doors (brown '+' when closed; ''' when open): Many monsters can't open doors.
