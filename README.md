@@ -1,7 +1,7 @@
 # Gaunt
 
 ## About
-Gaunt is a roguelike game I'm making. It's still in development right now, so it's not quite playable.
+Gaunt is a roguelike game I'm making. It follows the classic story of going into the Dungeons of Doom to get the Amulet of Yendor.
 
 ## Controls
 - Move: arrow keys
@@ -15,6 +15,8 @@ Gaunt is a roguelike game I'm making. It's still in development right now, so it
 - Throw a potion: t+[item letter]+[mouse click at destination]
 - Equip armor: a+[item letter]
 - Unequip armor: A
+- Equip weapon: w+[item letter]
+- Unequip weapon: W
 
 ## Monsters
 The player will encounter a variety of monsters in the game. Here are some of them:
@@ -43,6 +45,10 @@ The player will encounter a variety of monsters in the game. Here are some of th
 ## Armor
 - Chain mail, Mithril, Iron Armor, etc.
 
+## Weapons
+- There are weapons.
+
 ## Dungeon Features
 - Doors (brown '+' when closed; ''' when open): Many monsters can't open doors.
 - Heroes' Bane (brownish '"'): This fungus grows in patches on the lower levels. Spilling blood onto it will spawn redcaps.
+- Amulet of Yendor: A purple sort of '^' shape. Grabbing it causes you to win.

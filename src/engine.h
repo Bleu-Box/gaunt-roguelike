@@ -19,9 +19,11 @@ class Engine {
 		NEW_TURN // update things
 	} gameStatus;
 
+	static const int MAX_LEVEL = 10;
 	std::vector<Actor*> actors;
 	Actor* player;
 	Actor* stairs;
+	Actor* amulet;
 	Map* map;
 	Gui* gui;
 	bool renderMap; // this controls whether we show map and monsters (turn it off for 'blindness')
@@ -30,7 +32,6 @@ class Engine {
 	~Engine();
 
 	void sendToBack(Actor* actor);
-	Actor* getClosestMonster(int x, int y, float range) const;
 	Actor* getActorAt(int x, int y);
 	bool pickTile(int* x, int* y, float maxRange = 0.0f);
 	void update();
@@ -39,7 +40,7 @@ class Engine {
 	void load();
 	void terminate();
 	void nextLevel();
-	void spawnActor(Actor* a) { spawnQueue.push_back(a); }
+	void spawnActor(Actor* a) { toSpawn.push_back(a); }
 	int getFovRadius() const { return fovRadius; }
 	int getScreenWidth() const { return screenWidth; }
 	int getScreenHeight() const { return screenHeight; }
@@ -49,7 +50,7 @@ class Engine {
 	int getTurnCount() const { return turnCount; }	
 	
  private:
-	std::vector<Actor*> spawnQueue;
+	std::vector<Actor*> toSpawn;
 	int fovRadius;
 	int turnCount;
 	int screenWidth;

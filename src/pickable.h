@@ -46,8 +46,21 @@ class Armor: public Pickable {
 	
 	Armor();
 
-	std::string getName() const { return name; }
+	std::string getName() const { return name+(equipped? " (equipped)" : ""); }
 
+ private:
+	std::string name;
+};
+
+class Weapon: public Pickable {
+ public:
+	float power;
+	float weight;
+	bool equipped;
+
+	Weapon();
+
+	std::string getName() const { return name+(equipped? " (equipped)" : ""); }
  private:
 	std::string name;
 };

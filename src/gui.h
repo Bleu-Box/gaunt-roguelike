@@ -33,8 +33,8 @@ class Gui {
 	~Gui();
 
 	void render();
+	void renderFinalMessage(std::string msg);
 	void message(std::string text);
-	void clearMessages();
 	int getDataConsoleWidth() const { return dataConsole->getWidth(); }
 	int getDataConsoleHeight() const { return dataConsole->getHeight(); }
 	int getMessageConsoleWidth() const { return messageConsole->getWidth(); }

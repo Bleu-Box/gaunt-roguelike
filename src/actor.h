@@ -10,6 +10,8 @@ class Attacker;
 class Destructible;
 class Ai;
 class Pickable;
+class Armor;
+class Weapon;
 class Container;
 class Spreadable;
 class Effect;
@@ -42,8 +44,10 @@ class Actor {
 	bool moveOrAttack(int x, int y);
 	float getDistance(int cx, int cy) const;
 	void addEffect(Effect* effect);
-	void equipArmor(Actor* armor);
-	void unequipArmor();	
+	void equipArmor(Armor* armor);
+	void unequipArmor();
+	void equipWeapon(Weapon* weapon);
+	void unequipWeapon();
 };
 
 #endif

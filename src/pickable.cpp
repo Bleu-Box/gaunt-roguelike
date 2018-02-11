@@ -158,3 +158,32 @@ Armor::Armor(): equipped(false) {
 	std::string roundedDefense = std::to_string(round(defense*100)/100).substr(0, 4);
 	name = "+"+roundedDefense+" "+armorType+" armor"+"<"+roundedWeight+">";
 }
+
+////////// WEAPON ///////////////////////
+
+Weapon::Weapon(): equipped(false) {
+	// naming and stuff works just like it does with armor
+	TCODRandom* rand = TCODRandom::getInstance();
+	int n = rand->getInt(0, 9);
+	std::string weaponType;
+
+	switch(n) {
+	case 0: weaponType = "bokken"; break;
+	case 1: weaponType = "dagger"; break;
+	case 2: weaponType = "spear"; break;
+	case 3: weaponType = "sword"; break;
+	case 4: weaponType = "rapier"; break;
+	case 5: weaponType = "katana"; break;
+	case 6: weaponType = "war hammer"; break;
+	case 7: weaponType = "battleaxe"; break;
+	case 8: weaponType = "broadsword"; break;
+	case 9: weaponType = "halberd"; break;
+	}
+
+	weight = n*2;
+	power = (n+1)*2.2;
+	// compute full name
+	std::string roundedWeight = std::to_string(round(weight*100)/100).substr(0, 4);
+	std::string roundedPower = std::to_string(round(power*100)/100).substr(0, 4);
+	name = "+"+roundedPower+" "+weaponType+"<"+roundedWeight+">";
+}

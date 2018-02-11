@@ -19,13 +19,9 @@ Gui::Gui() {
 }
 
 Gui::~Gui() {
-        clearMessages();
+        messages.clear();
 	delete dataConsole;
 	delete messageConsole;
-}
-
-void Gui::clearMessages() {
-	messages.clear();
 }
 
 void Gui::render() {
@@ -34,18 +30,20 @@ void Gui::render() {
  
 	int data_y = 0;
 	#if DEBUG_MODE == 1
-	dataConsole->setDefaultForeground(TCODColor::red);
+	dataConsole->setDefaultForeground(TCODColor::green);
 	dataConsole->print(0, data_y++, "DEBUG MODE");
 	#endif
 	// print stats
 	dataConsole->setDefaultForeground(TCODColor::white);
 	dataConsole->print(0, data_y++, "Level %i", engine.getLevel());
+	dataConsole->print(0, data_y++, "Turns: %i", engine.getTurnCount());
 	dataConsole->print(1, data_y++, "Defense: %.1f", engine.player->destructible->getDefense());
 	dataConsole->print(1, data_y++, "Regen: %.1f", engine.player->destructible->getRegen());
 	dataConsole->print(1, data_y++, "Stren: %.1f", engine.player->stren);
 	dataConsole->print(1, data_y++, "Acc: %.1f", engine.player->attacker->getAccuracy());
 	dataConsole->print(1, data_y++, "Dmg: %.1f", engine.player->attacker->getPower());
-	dataConsole->print(1, data_y++, "Stealth: %.1f", dynamic_cast<PlayerAi*>(engine.player->ai)->stealth);
+	dataConsole->print(1, data_y++, "Stealth: %i",
+			   dynamic_cast<PlayerAi*>(engine.player->ai)->stealth);
 
 	// print the health of visible actors
 	// get visible actors and sort them by proximity to player
@@ -95,6 +93,17 @@ void Gui::render() {
 			  TCODConsole::root, engine.getScreenWidth()-BAR_WIDTH*1.2, 1);
 }
 
+// show a final closing message, i.e. for death or victory
+void Gui::renderFinalMessage(std::string msg) {
+	messageConsole->setDefaultBackground(TCODColor::black);
+	messageConsole->setDefaultForeground(TCODColor::yellow);
+        messageConsole->clear();
+	messageConsole->print(MSG_X, 0, msg.c_str());
+	TCODConsole::blit(messageConsole, 0, 0, messageConsole->getWidth(), messageConsole->getHeight(), 
+			  TCODConsole::root, engine.getScreenWidth()/2-messageConsole->getWidth()/2,
+			  engine.getScreenHeight()/2-messageConsole->getHeight());
+}
+
 // shows health bar
 void Gui::renderBar(int x, int y, int width, std::string name, float value,
 		    float maxValue, const TCODColor& barColor, const TCODColor& backColor) {
@@ -113,10 +122,16 @@ void Gui::renderBar(int x, int y, int width, std::string name, float value,
 	dataConsole->printEx(x+width/2, y, TCOD_BKGND_NONE, TCOD_CENTER, "%s", name.c_str());
 }
 
-// add another message unless there's 2 or more already
+// add another message
 void Gui::message(std::string text) {
-	if(messages.size() < 2)
-		messages.push_back(text);
+	// if there are too many messages, remove the first message to make room
+	if(messages.size() >= 2) {
+		std::string temp = messages.back();
+		messages.clear();
+		messages.push_back(temp);
+	}
+	
+	messages.push_back(text);
 }
 
 Menu::~Menu() {
@@ -136,19 +151,17 @@ void Menu::addItem(MenuItemCode code, std::string label) {
 
 Menu::MenuItemCode Menu::pick() {
         static TCODImage img("./assets/images/background.png");
-	static const int BKGND_IMG_SIZE = engine.getScreenWidth() <= engine.getScreenHeight()?
-	        engine.getScreenWidth() : engine.getScreenHeight();
 	
 	int selectedItem = 0;
 	while(!TCODConsole::isWindowClosed()) {
-		img.blitRect(TCODConsole::root, 0, 0, BKGND_IMG_SIZE, BKGND_IMG_SIZE);
+		img.blit2x(TCODConsole::root, 0, 0, 300, 100);
 		
 		int currentItem = 0;
 		for(MenuItem* item : items) {
 			if(currentItem == selectedItem) {
-				TCODConsole::root->setDefaultForeground(TCODColor::white);
+				TCODConsole::root->setDefaultForeground(TCODColor::yellow);
 			} else {
-				TCODConsole::root->setDefaultForeground(TCODColor::lightGrey);
+				TCODConsole::root->setDefaultForeground(TCODColor::desaturatedYellow);
 			}
 		   
 			TCODConsole::root->print(30, 10+currentItem*3, item->label.c_str());

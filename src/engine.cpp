@@ -30,7 +30,7 @@ void Engine::init() {
 	Potion::assignColors();
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(20, 5, 0.5);
+	player->destructible = new PlayerDestructible(20, 5, 0.025);
         #if DEBUG_MODE == 1
 		player->destructible->invincible = true;
         #endif
@@ -40,16 +40,24 @@ void Engine::init() {
 	actors.push_back(player);
 
 	// the stairs -- even though they begin w/ a location at (0, 0), the map will put them somewhere else
-	stairs = new Actor(0, 0, '>', "Stairs", TCODColor::yellow);
+	stairs = new Actor(0, 0, '>', "Stairs", TCODColor::lightGrey);
 	stairs->blocks = false;
 	stairs->resistsMagic = true;
 	actors.push_back(stairs);
-	// TODO: find a better way to make map size based on Gui panel sizes
-	//map = new Map(screenWidth-18, screenHeight-7);
-	map = new Map(screenWidth-gui->getDataConsoleWidth(), screenHeight-gui->getMessageConsoleHeight());
+
+	// the Amulete of Yendor
+	amulet = new Actor(0, 0, TCOD_CHAR_ARROW2_N, "Amulet of Yendor", TCODColor::violet);
+	amulet->blocks = false;
+	amulet->resistsMagic = true;
+	amulet->pickable = new Pickable();
+	actors.push_back(amulet);
 	
-	gui->message("Welcome to the Dungeons of Doom!");
-	gui->message("You should try getting the Amulet of Yendor while you're down here.");
+	map = new Map(screenWidth-gui->getDataConsoleWidth(),
+		      screenHeight-gui->getMessageConsoleHeight());
+	
+	gui->message("Welcome to the DUNGEONS OF DOOM!");
+	gui->message("The fabled AMULET OF YENDOR lies on level "
+		     +std::to_string(MAX_LEVEL)+". Go get it!");
 	gameStatus = STARTUP;
 }
 
@@ -76,39 +84,50 @@ void Engine::terminate() {
  
 void Engine::update() {
 	if(gameStatus == STARTUP) map->computeFov();
-	gameStatus = IDLE;
+
+	if(!(gameStatus == VICTORY || gameStatus == DEFEAT)) gameStatus = IDLE;
 	// get key and update player
 	TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS, &lastKey, NULL);
 	player->update();
 		
 	TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS|TCOD_EVENT_MOUSE, &lastKey, &mouse);
+		
 	// update actors (except for player)
 	if(gameStatus == NEW_TURN) {
-		gui->clearMessages();
 		turnCount++;
-		
+
 		for(Actor* actor : actors) {
 			if(actor != player) actor->update();
 		}
-
+		// get rid of dead actors
 		actors.erase(std::remove_if(actors.begin(), actors.end(),
 					    [](Actor* a) {
 						    return a->destructible && a->destructible->isDead();
 					    }), actors.end());
-		actors.insert(actors.end(), spawnQueue.begin(), spawnQueue.end());
-		spawnQueue.clear();
+		// insert actors that were spawned this turn into the list
+		actors.insert(actors.end(), toSpawn.begin(), toSpawn.end());
+		toSpawn.clear();
 	}
 }
 
 void Engine::render() {	
 	TCODConsole::root->clear();
-	if(renderMap) map->render();
 
-	for(Actor* actor : actors) {
-		if(map->isInFov(actor->x, actor->y)) {
-			if(renderMap || actor == player) actor->render();
-		        gui->render();
+	if(gameStatus == NEW_TURN || gameStatus == IDLE) {
+		if(renderMap) map->render();
+
+		for(Actor* actor : actors) {
+			if(map->isInFov(actor->x, actor->y)) {
+				if(renderMap || actor == player) actor->render();
+				gui->render();
+			}
 		}
+	} else if(gameStatus == DEFEAT) {
+		gui->renderFinalMessage("You died on level "+std::to_string(level)+
+			     ", after "+std::to_string(turnCount)+"turns.");
+	} else if(gameStatus == VICTORY) {
+		gui->renderFinalMessage("You won! It took you "
+					+std::to_string(turnCount)+" turns to do so.");
 	}
 }
 
@@ -118,25 +137,6 @@ void Engine::sendToBack(Actor* actor) {
 	actors.erase(i);
 	actors.insert(actors.begin(), actor);
 }
-
-/*
-Actor* Engine::getClosestMonster(int x, int y, float range) const {
-	Actor* closest = NULL;
-	float bestDist = 1E6f; // starts at impossibly high value
-	
-	for(Actor* actor : actors) {
-		if(actor != player && actor->destructible && !actor->destructible->isDead()) {
-			float dist = actor->getDistance(x, y);
-			if(dist < bestDist && (dist <= range || range == 0.0f)) {
-				bestDist = dist;
-				closest = actor;
-			}
-		}
-	}
-	
-	return closest;
-}
-*/
 
 Actor* Engine::getActorAt(int x, int y) {
 	auto it = std::find_if(actors.begin(), actors.end(), [x, y](Actor* a) {
@@ -191,7 +191,8 @@ void Engine::nextLevel() {
 	actors.push_back(player);
 	actors.push_back(stairs);
 	
-	map = new Map(screenWidth-18, screenHeight-7);
+	map = new Map(screenWidth-gui->getDataConsoleWidth(),
+		      screenHeight-gui->getMessageConsoleHeight());
 	
 	gameStatus = STARTUP;
 	map->computeFov();

@@ -77,7 +77,7 @@ void Map::init() {
 		        addItem(x, y);
 		}
 	}
-
+	
 	// spawn player (and then stairs) on a walkable tile
 	Room spawnpoint = rooms[0];
 	int player_x, player_y;
@@ -88,14 +88,26 @@ void Map::init() {
 	engine.player->x = player_x;
 	engine.player->y = player_y;
 
-	Room stairsRoom = rooms[rooms.size()-1];
-	int stairs_x, stairs_y;
-	do {
-	        stairs_x = rand->getInt(stairsRoom.x1+1, stairsRoom.x2-1);
-	        stairs_y = rand->getInt(stairsRoom.y1+1, stairsRoom.y2-1);
-	} while(!canWalk(stairs_x, stairs_y));
-	engine.stairs->x = stairs_x;
-	engine.stairs->y = stairs_y;
+	// don't spawn stairs on last level - instead spawn Amulet of Yendor
+	if(engine.getLevel() < engine.MAX_LEVEL) {
+		Room stairsRoom = rooms[rooms.size()-1];
+		int stairs_x, stairs_y;
+		do {
+			stairs_x = rand->getInt(stairsRoom.x1+1, stairsRoom.x2-1);
+			stairs_y = rand->getInt(stairsRoom.y1+1, stairsRoom.y2-1);
+		} while(!canWalk(stairs_x, stairs_y));
+		engine.stairs->x = stairs_x;
+		engine.stairs->y = stairs_y;
+	} else {
+		Room amuletRoom = rooms[rooms.size()-1];
+		int am_x, am_y;
+		do {
+		        am_x = rand->getInt(amuletRoom.x1+1, amuletRoom.x2-1);
+		        am_y = rand->getInt(amuletRoom.y1+1, amuletRoom.y2-1);
+		} while(!canWalk(am_x, am_y));
+		engine.amulet->x = am_x;
+		engine.amulet->y = am_y;
+	}
 }
 
 // make and dig all the rooms at random locations
@@ -334,18 +346,25 @@ void Map::addItem(int x, int y) {
 
 	if(choice < 50) {
 		Potion* pick = new Potion();
-		Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::darkCyan);
+		Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::cyan);
 		potion->blocks = false;
 		potion->pickable = pick;
 		engine.actors.push_back(potion);
 		engine.sendToBack(potion);
-	} else {
+	} else if(choice < 75) {
 		Armor* pick = new Armor();
-		Actor* armor = new Actor(x, y, ']', pick->getName(), TCODColor::darkCyan);
+		Actor* armor = new Actor(x, y, ']', pick->getName(), TCODColor::cyan);
 	        armor->blocks = false;
 	        armor->pickable = pick;
 		engine.actors.push_back(armor);
 		engine.sendToBack(armor);
+	} else {
+		Weapon* pick = new Weapon();
+		Actor* weapon = new Actor(x, y, '/', pick->getName(), TCODColor::cyan);
+		weapon->blocks = false;
+		weapon->pickable = pick;
+		engine.actors.push_back(weapon);
+		engine.sendToBack(weapon);
 	}
 }
 

@@ -18,40 +18,47 @@ PlayerAi::PlayerAi(int stealth): Ai(1), stealth(stealth) {}
 
 void PlayerAi::update(Actor* owner) {
 	// don't do anything if owner is dead
-	if(owner->destructible && owner->destructible->isDead()) return;
+	if((owner->destructible && owner->destructible->isDead())
+	   || engine.gameStatus == Engine::VICTORY)
+		return;
 	// otherwise, respond to keyboard input
 	int dx = 0, dy = 0;
 	bool action = false; // whether the key input counts as an action
 	bool moved = false; // whether or not the player actually moved/tried to move
+	
 	switch(engine.getLastKey().vk) {
-	case TCODK_UP:
+	case TCODK_UP: 
 		dy = -1;
-		action = true;
-		moved = true;
 		break;
+
 	case TCODK_DOWN:
 		dy = 1;
-		action = true;
-		moved = true;
 		break;
+
 	case TCODK_LEFT:
 		dx = -1;
-		action = true;
-		moved = true;
 		break;
+		
 	case TCODK_RIGHT:
 		dx = 1;
-		action = true;
-		moved = true;
 		break;
+		
 	case TCODK_CHAR:
 		action = handleActionKey(owner, engine.getLastKey().c);
 		break;
+		
 	default:
 		break;
 	}
 
-	if(action) {
+	if(dx != 0 || dy != 0) {
+		action = true;
+		moved = true;
+	}
+	
+	// if the player did something, advance a turn
+	// unless the Amulet has been found
+	if(action && engine.gameStatus != Engine::VICTORY) {
 		engine.gameStatus = Engine::NEW_TURN;
 
 		if(confused && moved) {
@@ -72,16 +79,21 @@ void PlayerAi::update(Actor* owner) {
 // this returns true if a valid key was pressed, and false otherwise
 bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 	switch(ascii) {
-	// 'g' = pick up item 
+		// 'g' = pick up item 
 	case 'g': {
 		bool found = false;
 		// look for items in the map that owner is on top of
+		// also handle the case of finding the Amulet of Yendor
 		for(Actor* actor : engine.actors) {
 			if(actor->pickable && actor->x == owner->x && actor->y == owner->y) {
 				// add item to inventory if inventory isn't full
 				if(actor->pickable->pick(actor, owner)) {
 					found = true;
-				        engine.gui->message("You put the " + actor->name + " into your pack.");
+				        if(actor == engine.amulet) {
+						engine.gameStatus = Engine::VICTORY;
+					} else {
+						engine.gui->message("You put the " + actor->name + " into your pack.");
+					}
 					break;
 				} else if(!found) {
 					found = true;
@@ -96,16 +108,15 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 
 		return found;
 	}
-		break;
 
-	// show the inventory
+		// show the inventory
 	case 'i': {
 		// don't actually get anything, just take a peek
 	        getFromInventory(owner);
-	}
 		break;
+	}
 		
-	// 'q' = quaff a potion
+		// 'q' = quaff a potion
 	case 'q': {
 		engine.gui->message("What to quaff?");
 		// only pull up potions on the inventory display
@@ -118,10 +129,11 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		        if(potion) potion->quaff(actor, owner);
 		        return true;
 		}
-	}
+		
 		break;
+	}
 
-	// throw a potion
+		// throw a potion
 	case 't': {
 		Actor* actor = getFromInventory(owner, [](Actor* item) {
 				return item && item->pickable && dynamic_cast<Potion*>(item->pickable) != nullptr;
@@ -134,47 +146,83 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		        potion->splash(actor, owner, x, y);
 		        return true;
 		}
-	}
+
 		break;
-	// equip armor
+	}
+		
+		// equip armor
 	case 'a': {
 		Actor* actor = getFromInventory(owner, [](Actor* item) {
-				return item && item->pickable && dynamic_cast<Armor*>(item->pickable) != nullptr;
+				return item && item->pickable &&
+				dynamic_cast<Armor*>(item->pickable) != nullptr;
 			});
 		
 		if(actor) {
-		        owner->equipArmor(actor);
-			engine.gui->message(owner->name+" equips "+actor->name+".");
-		        return true;
-		}	
-	}
-		break;
+			Armor* armorPick = dynamic_cast<Armor*>(actor->pickable);
+			if(armorPick) {
+				owner->equipArmor(armorPick);
+				engine.gui->message(owner->name+" equips "+actor->name+".");
+				return true;
+			}
+		}
 
-	// unequip armor
+		break;
+	}
+
+		// unequip armor
 	case 'A': {
 		owner->unequipArmor();
 		engine.gui->message(owner->name+" unequips armor.");
 		return true;
 	}
-		break;
+
+		// equip weapon
+	case 'w': {
+		Actor* actor = getFromInventory(owner, [](Actor* item) {
+				return item && item->pickable &&
+				dynamic_cast<Weapon*>(item->pickable) != nullptr;
+			});
 		
-        // drop an item
+		if(actor) {
+		        owner->equipWeapon(dynamic_cast<Weapon*>(actor->pickable));
+			engine.gui->message(owner->name+" equips "+actor->name+".");
+		        return true;
+		}
+
+		break;
+	}
+
+		// unequip weapon
+	case 'W': {
+		owner->unequipWeapon();
+		engine.gui->message(owner->name+" unequips armor.");
+		return true;
+	}
+		
+		// drop an item
 	case 'd': {
 		engine.gui->message("What to drop?");
 		Actor* actor = getFromInventory(owner);
 		if(actor) {
 			// make sure to unequip equipped armor if it's being dropped
 			Armor* armorPick = dynamic_cast<Armor*>(actor->pickable);
-			if(armorPick != nullptr && armorPick->equipped) owner->unequipArmor();
+			if(armorPick != nullptr && armorPick->equipped) {
+				owner->unequipArmor();
+			} else {
+				Weapon* weaponPick = dynamic_cast<Weapon*>(actor->pickable);
+				if(weaponPick != nullptr && weaponPick->equipped)
+					owner->unequipWeapon();
+			}
 			
 		        actor->pickable->drop(actor, owner);
 		        return true;
 		}
-	}
+		
 		break;
-        // open door in indicated direction 
+	}
+
+		// open door in indicated direction 
 	case 'o': {
-		engine.gui->message("Where would you like to open a door? Indicate direction using an arrow key.");
 		TCOD_key_t key;
 		TCODSystem::waitForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL, true);
 		int door_x = owner->x;
@@ -189,10 +237,9 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		engine.map->openDoor(door_x, door_y);
 		return true;
 	}
-		break;
-	// close door
+
+		// close door
 	case 'c': {
-		engine.gui->message("Where would you like to close a door? Indicate direction using an arrow key.");
 		TCOD_key_t key;
 		TCODSystem::waitForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL, true);
 		int door_x = owner->x;
@@ -207,13 +254,13 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		engine.map->closeDoor(door_x, door_y);
 		return true;
 	}
-		break;
-	// rest 1 turn
+
+		// rest 1 turn
 	case '.': {
 	        return true;
 	}
-		break;
-	// press '>' to go down stairs
+
+		// press '>' to go down stairs
 	case '>': {
 		if(engine.stairs->x == owner->x && engine.stairs->y == owner->y) {
 			engine.nextLevel();
@@ -221,8 +268,9 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		} else {
 		        engine.gui->message("There aren\'t any stairs here.");
 		}
-	}
+
 		break;
+	}
 	}
 
 	return false;

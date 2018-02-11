@@ -2,13 +2,16 @@
 #include <algorithm>
 #include "main.h"
 #include "attacker.h"
+#include "pickable.h"
 #include "actor.h"
 #include "destructible.h"
 #include "gui.h"
 #include "map.h"
 
-Attacker::Attacker(float power, float accuracy, std::string action): action(action), power(power), accuracy(accuracy),
-								     enchanted(false) {
+Attacker::Attacker(float power, float accuracy, std::string action): action(action), power(power),
+								     accuracy(accuracy),
+								     enchanted(false),
+								     weapon(NULL) {
 	// accuracy must be in range [0..100]
 	assert(accuracy >= 0 && accuracy <= 100);
 }
@@ -17,6 +20,10 @@ Attacker::Attacker(const Attacker& other): Attacker(other.getPower(), other.getA
 	if(other.isEnchanted()) {
 	        setEffect(other.getEffectType(), other.getEffectDuration());
 	}
+}
+
+Attacker::~Attacker() {
+	delete weapon;
 }
 
 Attacker& Attacker::operator=(const Attacker& rhs) {
@@ -49,8 +56,9 @@ void Attacker::attack(Actor* owner, Actor* target) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	
 	if(target->destructible && !target->destructible->isDead()) {
-		if(rand->getInt(0, 100) <= accuracy) {
-			float dmg = target->destructible->takeDamage(target, power);
+		if(rand->getInt(0, 100) <= getAccuracy()) {
+			float dmg = target->destructible->takeDamage(target, getPower());
+			
 		        if(enchanted) {
 			        target->addEffect(new Effect(effectType, effectDuration));
 			}
@@ -75,4 +83,21 @@ void Attacker::attack(Actor* owner, Actor* target) {
 		        engine.gui->message(owner->name + " misses " + target->name + ".");
 		}		
 	} 
+}
+
+void Attacker::equipWeapon(Weapon* _weapon) {
+	weapon = _weapon;
+}
+
+void Attacker::unequipWeapon() {
+	weapon = NULL;
+}
+
+float Attacker::getPower() const {
+	return power+(weapon? weapon->power : 0);
+}
+
+float Attacker::getAccuracy() const {
+	// TODO: make owner strength a factor as well
+	return accuracy/(weapon? weapon->weight : 1);
 }
