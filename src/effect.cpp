@@ -36,6 +36,8 @@ void Effect::update(Actor* target) {
 		} else if(type == HEALTH) {
 			if(target->destructible)
 				target->destructible->heal(target->destructible->getMaxHp()/duration);
+		} else if(type == STRENGTH) {
+		        target->stren += 0.25;
 		}
 		
 		duration--;
@@ -71,6 +73,7 @@ std::string Effect::getName() const {
 	case PROTECTION: return "Protection";
 	case WASTING: return "Wasting";
 	case HEALTH: return "Health";
+	case STRENGTH: return "Strength";
 	default: return "Effect";
 	}
 }

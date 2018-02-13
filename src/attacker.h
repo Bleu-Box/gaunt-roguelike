@@ -21,17 +21,19 @@ class Attacker {
 	int getEffectDuration() const { return effectDuration; }
 	bool isEnchanted() const { return enchanted; }
 	void setEffect(Effect::EffectType type, int duration);
-        void setAccuracy(float val) { if(val >= 0 && val <= 100) accuracy = val; }
 	float getPower() const;
-        float getAccuracy() const;
+        float getAccuracy(Actor* owner) const;
 	std::string getAction() const { return action; }
 	void equipWeapon(Weapon* _weapon);
 	void unequipWeapon();
 
+ protected:
+	float getNatAccuracy() const { return natAccuracy; }
+	
  private:
 	std::string action; // the action the attacker does to its target
 	float power;
-	float accuracy;
+	float natAccuracy;
 	Effect::EffectType effectType; // for magical effects
 	int effectDuration;
 	bool enchanted; // flags whether or not attacker has effect

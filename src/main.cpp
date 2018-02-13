@@ -1,6 +1,6 @@
 #include "main.h"
 
-Engine engine(100, 50);
+Engine engine(100, 40);
 
 int main() {
 	engine.load();

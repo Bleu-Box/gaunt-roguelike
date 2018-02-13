@@ -83,7 +83,7 @@ bool Potion::colorIsKnown(Color c) {
 // return the potion's name based on its color/effect type
 std::string Potion::getName() const {
 	if(colorIsKnown(color)) {
-		return Effect::effectTypeToString(potionNames[color])+" potion";
+		return "Potion of "+Effect::effectTypeToString(potionNames[color]);
 	} else {
 		switch(color) {
 		case CYAN: return "Cyan potion";
@@ -91,7 +91,8 @@ std::string Potion::getName() const {
 		case AQUAMARINE: return "Aquamarine potion";
 		case BLACK: return "Black potion";
 		case MIDNIGHT_BLUE: return "Midnight blue potion";
-		case COPPER: return "Copper potion";
+		case CLEAR: return "Clear potion";
+		case GREEN: return "Green potion";
 		default: return "Strange potion";	
 		}
 	}
@@ -114,7 +115,7 @@ void Potion::splash(Actor* owner, Actor* wearer, int x, int y) {
 
 	Actor* actor = engine.getActorAt(x, y);
 			
-	if(actor) {
+	if(actor && actor->x == x && actor->y == y) {
 		learnColor(color);
 		actor->addEffect(effect);
 		engine.gui->message("The "+getName()+" splashes all over the "+actor->name+"!");

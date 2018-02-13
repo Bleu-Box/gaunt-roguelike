@@ -71,7 +71,7 @@ void Map::init() {
 		        spawnHorde(x, y);
 		}
 	        
-		if(rand->getInt(0, 100) < 30) {
+		if(rand->getInt(0, 100) < 70) {
 			int x = rand->getInt(room.x1+1, room.x2-1);
 			int y = rand->getInt(room.y1+1, room.y2-1);
 		        addItem(x, y);
@@ -343,8 +343,8 @@ void Map::addItem(int x, int y) {
 
 	TCODRandom* rand = TCODRandom::getInstance();
 	int choice = rand->getInt(0, 100);
-
-	if(choice < 50) {
+	
+	if(choice < 70) {
 		Potion* pick = new Potion();
 		Actor* potion = new Actor(x, y, '!', pick->getName(), TCODColor::cyan);
 		potion->blocks = false;
@@ -388,7 +388,7 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	if(level >= 7) candidates.push_back(GOBLIN);
 	if(level >= 8) candidates.push_back(NENN);
 	if(level >= 9) candidates.push_back(YRCH);
-	if(level >= 10 && rand->getInt(0, 100) < 10) candidates.push_back(BRIGHT);
+	if(level >= 10 && rand->getInt(0, 100) < 30) candidates.push_back(BRIGHT);
 
 	return candidates[rand->getInt(0, candidates.size()-1)];
 }

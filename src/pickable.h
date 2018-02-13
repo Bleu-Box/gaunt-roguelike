@@ -19,7 +19,7 @@ class Pickable {
 
 class Potion: public Pickable {
  public:
-        enum Color {CYAN, VERMILLION, AQUAMARINE, BLACK, MIDNIGHT_BLUE, COPPER, NUM_COLORS};
+        enum Color {CYAN, VERMILLION, AQUAMARINE, BLACK, MIDNIGHT_BLUE, CLEAR, GREEN, NUM_COLORS};
 	static std::map<Color, Effect::EffectType> potionNames;
 	
 	Potion();

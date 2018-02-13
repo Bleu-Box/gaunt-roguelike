@@ -9,14 +9,14 @@
 #include "map.h"
 
 Attacker::Attacker(float power, float accuracy, std::string action): action(action), power(power),
-								     accuracy(accuracy),
+								     natAccuracy(accuracy),
 								     enchanted(false),
 								     weapon(NULL) {
 	// accuracy must be in range [0..100]
 	assert(accuracy >= 0 && accuracy <= 100);
 }
 
-Attacker::Attacker(const Attacker& other): Attacker(other.getPower(), other.getAccuracy(), other.getAction()) {
+Attacker::Attacker(const Attacker& other): Attacker(other.getPower(), other.getNatAccuracy(), other.getAction()) {
 	if(other.isEnchanted()) {
 	        setEffect(other.getEffectType(), other.getEffectDuration());
 	}
@@ -30,14 +30,14 @@ Attacker& Attacker::operator=(const Attacker& rhs) {
 	Attacker temp = Attacker(rhs);
 	
 	float _power = temp.getPower();
-	float _acc = temp.getAccuracy();
+	float _acc = temp.getNatAccuracy();
 	std::string _action = temp.getAction();
 	bool _isEnchanted = temp.isEnchanted();
 	Effect::EffectType _effectType = temp.getEffectType();
 	int _effectDuration = temp.getEffectDuration();
 
 	std::swap(power, _power);
-	std::swap(accuracy, _acc);
+	std::swap(natAccuracy, _acc);
 	std::swap(action, _action);
 	std::swap(enchanted, _isEnchanted);
 	std::swap(effectType, _effectType);
@@ -56,7 +56,7 @@ void Attacker::attack(Actor* owner, Actor* target) {
 	TCODRandom* rand = TCODRandom::getInstance();
 	
 	if(target->destructible && !target->destructible->isDead()) {
-		if(rand->getInt(0, 100) <= getAccuracy()) {
+		if(rand->getInt(0, 100) <= getAccuracy(owner)) {
 			float dmg = target->destructible->takeDamage(target, getPower());
 			
 		        if(enchanted) {
@@ -97,7 +97,7 @@ float Attacker::getPower() const {
 	return power+(weapon? weapon->power : 0);
 }
 
-float Attacker::getAccuracy() const {
-	// TODO: make owner strength a factor as well
-	return accuracy/(weapon? weapon->weight : 1);
+float Attacker::getAccuracy(Actor* owner) const {
+        float acc = natAccuracy/(weapon? weapon->weight/owner->stren : 1);
+	return acc < 100? acc : 100;
 }

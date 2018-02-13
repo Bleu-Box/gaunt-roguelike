@@ -40,7 +40,7 @@ void Gui::render() {
 	dataConsole->print(1, data_y++, "Defense: %.1f", engine.player->destructible->getDefense());
 	dataConsole->print(1, data_y++, "Regen: %.1f", engine.player->destructible->getRegen());
 	dataConsole->print(1, data_y++, "Stren: %.1f", engine.player->stren);
-	dataConsole->print(1, data_y++, "Acc: %.1f", engine.player->attacker->getAccuracy());
+	dataConsole->print(1, data_y++, "Acc: %.1f", engine.player->attacker->getAccuracy(engine.player));
 	dataConsole->print(1, data_y++, "Dmg: %.1f", engine.player->attacker->getPower());
 	dataConsole->print(1, data_y++, "Stealth: %i",
 			   dynamic_cast<PlayerAi*>(engine.player->ai)->stealth);
@@ -96,7 +96,7 @@ void Gui::render() {
 // show a final closing message, i.e. for death or victory
 void Gui::renderFinalMessage(std::string msg) {
 	messageConsole->setDefaultBackground(TCODColor::black);
-	messageConsole->setDefaultForeground(TCODColor::yellow);
+	messageConsole->setDefaultForeground(TCODColor::white);
         messageConsole->clear();
 	messageConsole->print(MSG_X, 0, msg.c_str());
 	TCODConsole::blit(messageConsole, 0, 0, messageConsole->getWidth(), messageConsole->getHeight(), 
@@ -155,21 +155,29 @@ Menu::MenuItemCode Menu::pick() {
 	int selectedItem = 0;
 	while(!TCODConsole::isWindowClosed()) {
 		img.blit2x(TCODConsole::root, 0, 0, 300, 100);
-		
+
+		int con_x = 0;
+		int con_y = 0;
+		int con_w = 40;
+		int con_h = 20;
+		TCODConsole* options = new TCODConsole(con_w, con_h);
+	        options->printFrame(con_x, con_y, con_w, con_h, true,
+					      TCOD_BKGND_DEFAULT, "GAUNT");		
 		int currentItem = 0;
 		for(MenuItem* item : items) {
 			if(currentItem == selectedItem) {
-				TCODConsole::root->setDefaultForeground(TCODColor::yellow);
+			        options->setDefaultForeground(TCODColor::white);
 			} else {
-				TCODConsole::root->setDefaultForeground(TCODColor::desaturatedYellow);
+			        options->setDefaultForeground(TCODColor::grey);
 			}
-		   
-			TCODConsole::root->print(30, 10+currentItem*3, item->label.c_str());
+
+		        options->print(con_x+2, (con_y+2)+currentItem*2, item->label.c_str());
 			currentItem++;
 		}
 
+		TCODConsole::blit(options, 0, 0, 0, 0, TCODConsole::root, con_x, con_y);
 		TCODConsole::flush();
-
+		
 		// check key presses
 		TCOD_key_t key;
 		TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL);

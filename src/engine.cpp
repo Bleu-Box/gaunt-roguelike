@@ -13,9 +13,11 @@
 Engine::Engine(int screenWidth, int screenHeight): 
 	gameStatus(STARTUP), player(NULL), map(NULL), renderMap(true), fovRadius(5), turnCount(0),
 	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
-	// set font
-	TCODConsole::setCustomFont("./assets/fonts/consolas18x18_gs_tc.png",
-				   TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
+	// set font -- alternate fonts are listed in the assets/fonts folder
+	// the alternate fonts vary in size and smoothness
+	TCODConsole::setCustomFont(/*"./assets/fonts/consolas18x18_gs_tc.png",*/
+				   "./assets/fonts/retro_font.png",
+				   TCOD_FONT_LAYOUT_ASCII_INROW/*TCOD*/|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
 	gui = new Gui();
 }
@@ -30,7 +32,7 @@ void Engine::init() {
 	Potion::assignColors();
 	// init player and related things for it
 	player = new Actor(100, 100, '@', "Player", TCODColor::white);
-	player->destructible = new PlayerDestructible(20, 5, 0.025);
+	player->destructible = new PlayerDestructible(20, 5, 0.05);
         #if DEBUG_MODE == 1
 		player->destructible->invincible = true;
         #endif
@@ -46,7 +48,7 @@ void Engine::init() {
 	actors.push_back(stairs);
 
 	// the Amulete of Yendor
-	amulet = new Actor(0, 0, TCOD_CHAR_ARROW2_N, "Amulet of Yendor", TCODColor::violet);
+	amulet = new Actor(0, 0, 30/*TCOD_CHAR_ARROW2_N*/, "Amulet of Yendor", TCODColor::violet);
 	amulet->blocks = false;
 	amulet->resistsMagic = true;
 	amulet->pickable = new Pickable();
@@ -123,10 +125,10 @@ void Engine::render() {
 			}
 		}
 	} else if(gameStatus == DEFEAT) {
-		gui->renderFinalMessage("You died on level "+std::to_string(level)+
-			     ", after "+std::to_string(turnCount)+"turns.");
+		gui->renderFinalMessage("DEFEATED!\nYou died on level "+std::to_string(level)+
+			     ", after "+std::to_string(turnCount)+" turns.");
 	} else if(gameStatus == VICTORY) {
-		gui->renderFinalMessage("You won! It took you "
+		gui->renderFinalMessage("VICTORY!\nYou won! It took you "
 					+std::to_string(turnCount)+" turns to do so.");
 	}
 }

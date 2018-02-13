@@ -8,7 +8,7 @@ class Actor;
 
 class Effect {
  public:
-	enum EffectType {POISON, BLINDNESS, CONFUSION, PROTECTION, WASTING, HEALTH, NUM_EFFECT_TYPES};
+	enum EffectType {POISON, BLINDNESS, CONFUSION, PROTECTION, WASTING, HEALTH, STRENGTH, NUM_EFFECT_TYPES};
 	
 	Effect(EffectType type, int duration);
 
