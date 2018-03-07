@@ -15,9 +15,12 @@ Engine::Engine(int screenWidth, int screenHeight):
 	screenWidth(screenWidth), screenHeight(screenHeight), level(1) {
 	// set font -- alternate fonts are listed in the assets/fonts folder
 	// the alternate fonts vary in size and smoothness
-	TCODConsole::setCustomFont(/*"./assets/fonts/consolas18x18_gs_tc.png",*/
-				   "./assets/fonts/retro_font.png",
-				   TCOD_FONT_LAYOUT_ASCII_INROW/*TCOD*/|TCOD_FONT_TYPE_GREYSCALE);
+	//TCODConsole::setCustomFont("./assets/fonts/retro_font.png",
+	//			   TCOD_FONT_LAYOUT_ASCII_INROW|TCOD_FONT_TYPE_GREYSCALE);
+	//TCODConsole::setCustomFont("./assets/fonts/consolas18x18_gs_tc.png",
+	//			   TCOD_FONT_LAYOUT_TCOD|TCOD_FONT_TYPE_GREYSCALE);
+	TCODConsole::setCustomFont("./assets/fonts/Talryth_square_15x15_modified.png",
+				   TCOD_FONT_LAYOUT_ASCII_INROW|TCOD_FONT_TYPE_GREYSCALE);
 	TCODConsole::initRoot(screenWidth, screenHeight, "Gaunt", false);
 	gui = new Gui();
 }

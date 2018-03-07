@@ -5,11 +5,11 @@ Gaunt is a roguelike game I'm making. It follows the classic story of going into
 
 ## Controls
 - Move: arrow keys
+- View inventory: i
 - Close door: c+[arrow key]
 - Open door: o+[arrow key]
 - Pick up item: g
 - Drop item: d+[item letter]
-- Use item: i+[item letter]
 - Rest a turn: .
 - Quaff a potion: q+[item letter]
 - Throw a potion: t+[item letter]+[mouse click at destination]
