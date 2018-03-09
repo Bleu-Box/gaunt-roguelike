@@ -13,6 +13,7 @@ class Pickable {
  public:
 	virtual ~Pickable() {};
 
+	virtual std::string getName() const;
 	bool pick(Actor* owner, Actor* wearer);
 	void drop(Actor* owner, Actor* wearer);
 };

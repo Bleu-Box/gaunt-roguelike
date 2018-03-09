@@ -293,7 +293,7 @@ bool PlayerAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 
 	// return true if we've gotten far enough to update the location
 	// also, encumberment plays a role in whether or not we move
-	if(rand->getInt(0, 100) <= owner->encumberment*5) {
+	if(owner->encumberment != 0.0 && rand->getInt(0, 100/owner->encumberment) <= 10) {
 		engine.gui->message(owner->name+" stumbles.");
 		return false;
 	} else {
@@ -316,8 +316,8 @@ Actor* PlayerAi::getFromInventory(Actor* owner, std::function<bool(Actor*)> pred
 	int shortcut = 'a';
 	int y = 1;
 	for(Actor* actor : owner->container->inventory) {
-		if(predicate(actor)) {
-			console.print(2, y, "(%c) %s", shortcut, actor->name.c_str());
+		if(predicate(actor) && actor->pickable) {
+			console.print(2, y, "(%c) %s", shortcut, actor->pickable->getName().c_str());				
 			y++;
 		}
 		shortcut++;

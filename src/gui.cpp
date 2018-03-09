@@ -10,7 +10,7 @@
 #include "effect.h"
 
 static const int BAR_WIDTH = 15;
-static const int DATA_CONSOLE_WIDTH = BAR_WIDTH*2;
+static const int DATA_CONSOLE_WIDTH = BAR_WIDTH*1.2;
 static const int MSG_X = 1;
 
 Gui::Gui() {
@@ -49,32 +49,48 @@ void Gui::render() {
 	// get visible actors and sort them by proximity to player
 	std::vector<Actor*> visibleActors(engine.actors.size());
 	auto it = std::copy_if(engine.actors.begin(), engine.actors.end(), visibleActors.begin(), [](Actor* a) {
-			return a->destructible && !a->destructible->isDead()
+			return (!a->destructible || (a->destructible && !a->destructible->isDead()))
 			         && engine.map->isInFov(a->x, a->y);
 		});
 	visibleActors.resize(std::distance(visibleActors.begin(), it));
+	// now sort actors based on distance to player and whether or not they're a monster
 	std::sort(visibleActors.begin(), visibleActors.end(), [](Actor* a, Actor* b) {
-			return a->getDistance(engine.player->x, engine.player->y)
-				< b->getDistance(engine.player->x, engine.player->y);
+			return (a->getDistance(engine.player->x, engine.player->y)
+				< b->getDistance(engine.player->x, engine.player->y))
+				|| (a->destructible && !b->destructible);
 		});
 
 	int bar_y = 1;
 	for(Actor* actor : visibleActors) {
-		int health_y = data_y+bar_y;
-		renderBar(0, health_y, BAR_WIDTH, actor->name,
-			  actor->destructible->getHp(), 
-			  actor->destructible->getMaxHp(), 
-			  TCODColor::darkAzure, TCODColor::darkestAzure);
-		// print out any effects on the actor
-		int offset = 0;
-		for(Effect* effect : actor->effects) {
-			renderBar(0, health_y+offset+1, BAR_WIDTH, effect->getName(),
-				  effect->getDuration(), effect->getStartDuration(),
-				  TCODColor::darkRed, TCODColor::darkestRed);
-		        offset++;
-		}
-		
-		bar_y += 2+offset;
+		// If the actor has a destructible (meaning it's some sort of creature)
+		// then print out health and effects. Otherwise, it's an item or stairs
+		// or something else, so just show its name.
+		if(actor->destructible) {
+			int health_y = data_y+bar_y;
+			renderBar(0, health_y, BAR_WIDTH, actor->name,
+				  actor->destructible->getHp(), 
+				  actor->destructible->getMaxHp(), 
+				  TCODColor::darkAzure, TCODColor::darkestAzure);
+			// print out any effects on the actor
+			int offset = 0;
+			for(Effect* effect : actor->effects) {
+				renderBar(0, health_y+offset+1, BAR_WIDTH, effect->getName(),
+					  effect->getDuration(), effect->getStartDuration(),
+					  TCODColor::darkRed, TCODColor::darkestRed);
+				offset++;
+			}
+			
+			bar_y += 2+offset;
+		} else {
+			// actor's name may need to be truncated to fit on data console
+			std::string name = (actor->name.length() > DATA_CONSOLE_WIDTH-2)?
+				actor->name.substr(0, DATA_CONSOLE_WIDTH-6)+"..." : actor->name;
+			// print actor's char/color and then name
+		        dataConsole->putChar(0, data_y+bar_y, actor->ch);
+		        dataConsole->setCharForeground(0, data_y+bar_y, actor->color);
+			dataConsole->print(2, data_y+bar_y, name.c_str());
+			bar_y++;
+		}		
 	}
 
 	// print message log	
@@ -90,7 +106,7 @@ void Gui::render() {
 			  TCODConsole::root, MSG_X, engine.getScreenHeight()-getMessageConsoleHeight());
 
 	TCODConsole::blit(dataConsole, 0, 0, dataConsole->getWidth(), dataConsole->getHeight(), 
-			  TCODConsole::root, engine.getScreenWidth()-BAR_WIDTH*1.2, 1);
+			  TCODConsole::root, engine.getScreenWidth()-DATA_CONSOLE_WIDTH, 1);
 }
 
 // show a final closing message, i.e. for death or victory

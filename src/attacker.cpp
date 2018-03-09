@@ -62,6 +62,9 @@ void Attacker::attack(Actor* owner, Actor* target) {
 		        if(enchanted) {
 			        target->addEffect(new Effect(effectType, effectDuration));
 			}
+
+			// if we've succeeded in killing the other, don't print attack messages
+			if(target->destructible->isDead()) return;
 			
 			if(dmg > 0.0) {
 				engine.gui->message(owner->name + " " + action + " " + target->name + ".");
@@ -81,7 +84,7 @@ void Attacker::attack(Actor* owner, Actor* target) {
 			}
 		} else {
 		        engine.gui->message(owner->name + " misses " + target->name + ".");
-		}		
+		}
 	} 
 }
 
