@@ -50,7 +50,7 @@ void Gui::render() {
 	std::vector<Actor*> visibleActors(engine.actors.size());
 	auto it = std::copy_if(engine.actors.begin(), engine.actors.end(), visibleActors.begin(), [](Actor* a) {
 			return (!a->destructible || (a->destructible && !a->destructible->isDead()))
-			         && engine.map->isInFov(a->x, a->y);
+			&& engine.map->isInFov(a->x, a->y) && (engine.renderMap || a == engine.player);
 		});
 	visibleActors.resize(std::distance(visibleActors.begin(), it));
 	// now sort actors based on distance to player and whether or not they're a monster

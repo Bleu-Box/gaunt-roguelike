@@ -11,8 +11,8 @@ all : gaunt
 clean:
 	rm src/*.o
 
-icon.o : icon.ico icon.rc
-	windres icon.rc icon.o
+icon.o : icon.ico assets/icon.rc
+	windres assets/icon.rc icon.o
 
 gaunt : $(OBJS) icon.o
 	g++ $(OBJS) icon.o -o gaunt -Wall -std=c++11 $(LIBFLAGS) -g -O3

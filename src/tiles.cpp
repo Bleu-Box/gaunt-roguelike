@@ -1,10 +1,10 @@
 #include "main.h"
 #include "tiles.h"
 
-Tile::Tile(int ch, bool transparent, bool walkable,
+Tile::Tile(int ch, bool transparent, bool walkable, std::string name,
 	   const TCODColor& fgColor, const TCODColor& bgColor):
         ffillFlag(false),  transparent(transparent), walkable(walkable),
-	ch(ch), fgColor(fgColor), bgColor(bgColor) {
+	name(name), ch(ch), fgColor(fgColor), bgColor(bgColor) {
 	#if DEBUG_MODE == 1
 		explored = true;
         #else

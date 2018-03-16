@@ -13,7 +13,6 @@ class Pickable {
  public:
 	virtual ~Pickable() {};
 
-	virtual std::string getName() const;
 	bool pick(Actor* owner, Actor* wearer);
 	void drop(Actor* owner, Actor* wearer);
 };
@@ -47,8 +46,10 @@ class Armor: public Pickable {
 	
 	Armor();
 
-	std::string getName() const { return name+(equipped? " (equipped)" : ""); }
-
+	void onEquip(Actor* owner);
+	void onUnequip(Actor* owner);
+	std::string getName() const { return name; }
+	
  private:
 	std::string name;
 };
@@ -61,7 +62,10 @@ class Weapon: public Pickable {
 
 	Weapon();
 
-	std::string getName() const { return name+(equipped? " (equipped)" : ""); }
+	void onEquip(Actor* owner);
+	void onUnequip(Actor* owner);
+	std::string getName() const { return name; }
+	
  private:
 	std::string name;
 };

@@ -79,7 +79,30 @@ void PlayerAi::update(Actor* owner) {
 // this returns true if a valid key was pressed, and false otherwise
 bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 	switch(ascii) {
-		// 'g' = pick up item 
+		// look at something
+	case 'l': {
+		// if player is blind, don't really do anything
+		if(!engine.renderMap) {
+			engine.gui->message("You can't see, you're blind!");
+		        return true;
+		}
+		
+		engine.gui->message("Select a place to look at:");
+		
+		int x, y;
+		std::string occupantName;
+	        engine.pickTile(&x, &y, engine.getFovRadius());
+		
+	        Actor* a = engine.getActorAt(x, y);
+		// for some odd reason, checking the location ensures the actor
+		// is real and everything
+		if(a && a->x == x && a->y == y) occupantName = a->name;
+		else occupantName = engine.map->getTile(x, y).name;
+		
+		engine.gui->message("That's a "+occupantName+".");
+		return true;
+	}
+		// 'g' = grab item 
 	case 'g': {
 		bool found = false;
 		// look for items in the map that owner is on top of
@@ -160,7 +183,7 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		if(actor) {
 			Armor* armorPick = dynamic_cast<Armor*>(actor->pickable);
 			if(armorPick) {
-				owner->equipArmor(armorPick);
+				owner->equipArmor(armorPick, actor);
 				engine.gui->message(owner->name+" equips "+actor->name+".");
 				return true;
 			}
@@ -184,7 +207,7 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 			});
 		
 		if(actor) {
-		        owner->equipWeapon(dynamic_cast<Weapon*>(actor->pickable));
+		        owner->equipWeapon(dynamic_cast<Weapon*>(actor->pickable), actor);
 			engine.gui->message(owner->name+" equips "+actor->name+".");
 		        return true;
 		}
@@ -317,7 +340,7 @@ Actor* PlayerAi::getFromInventory(Actor* owner, std::function<bool(Actor*)> pred
 	int y = 1;
 	for(Actor* actor : owner->container->inventory) {
 		if(predicate(actor) && actor->pickable) {
-			console.print(2, y, "(%c) %s", shortcut, actor->pickable->getName().c_str());				
+			console.print(2, y, "(%c) %s", shortcut, actor->name.c_str());				
 			y++;
 		}
 		shortcut++;

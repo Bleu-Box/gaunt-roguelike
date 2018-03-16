@@ -151,7 +151,7 @@ void Map::connectRooms() {
 
 // initialize a tile to a certain type (not to be confused with Map::setTile)
 void Map::initTile(int x, int y, const Tile& tile) {
-	tiles[x+y*width] = new Tile(tile.ch, tile.transparent, tile.walkable,
+	tiles[x+y*width] = new Tile(tile.ch, tile.transparent, tile.walkable, tile.name,
 				    tile.fgColor, tile.bgColor);
 	map->setProperties(x, y, tile.transparent, tile.walkable);
 }
@@ -245,6 +245,7 @@ void Map::setTile(int x, int y, const Tile& tile) {
 		t->ch = tile.ch;
 		t->transparent = tile.transparent;
 		t->walkable = tile.walkable;
+		t->name = tile.name;
 		t->fgColor = tile.fgColor;
 		t->bgColor = tile.bgColor;
 		map->setProperties(x, y, t->transparent, t->walkable);

@@ -94,11 +94,11 @@ void Actor::addEffect(Effect* effect) {
 	effects.push_back(effect);
 }
 
-void Actor::equipArmor(Armor* armor) {
+void Actor::equipArmor(Armor* armor, Actor* owner) {
 	// make sure to unequip any armor we have on first
 	unequipArmor();
 
-	armor->equipped = true;
+	armor->onEquip(owner);
 	// encumberment is based on armor's weight vs. actor's strength
 	float weightDiff = armor->weight-stren;
 	encumberment = weightDiff > 0? weightDiff : 0;
@@ -111,15 +111,15 @@ void Actor::unequipArmor() {
         // go through inventory and make sure all armor isn't equipped
 	for(Actor* item : container->inventory) {
 		Armor* armorPick = dynamic_cast<Armor*>(item->pickable);
-		if(armorPick != nullptr) armorPick->equipped = false;
+		if(armorPick != nullptr) armorPick->onUnequip(item);
 	}
 }
 
-void Actor::equipWeapon(Weapon* weapon) {
+void Actor::equipWeapon(Weapon* weapon, Actor* owner) {
 	// remove any current weapons
 	unequipWeapon();
 
-	weapon->equipped = true;
+	weapon->onEquip(owner);
 	if(attacker) attacker->equipWeapon(weapon);
 }
 
@@ -128,7 +128,7 @@ void Actor::unequipWeapon() {
         
 	for(Actor* item : container->inventory) {
 		Weapon* weaponPick = dynamic_cast<Weapon*>(item->pickable);
-		if(weaponPick != nullptr) weaponPick->equipped = false;
+		if(weaponPick != nullptr) weaponPick->onUnequip(item);
 	}
 }
 

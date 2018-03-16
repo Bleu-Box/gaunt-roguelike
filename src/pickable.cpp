@@ -160,6 +160,28 @@ Armor::Armor(): equipped(false) {
 	name = "+"+roundedDefense+" "+armorType+" armor"+"<"+roundedWeight+">";
 }
 
+// These 2 methods are duplicated for Weapon, but making a solution
+// to this would probably be overkill for the time being.
+// Anyway, these methods just handle modifying the name when equipped
+// to add/remove a string saying if it's equipped.
+void Armor::onEquip(Actor* owner) {
+	if(!equipped) {
+		owner->name += " (equipped)";
+	}
+	
+	equipped = true;
+}
+
+void Armor::onUnequip(Actor* owner) {
+	if(equipped) {
+		std::string toRemove = " (equipped)";
+		auto i = owner->name.find(toRemove);
+		owner->name.erase(i, toRemove.length());
+	}
+	
+	equipped = false;
+}
+
 ////////// WEAPON ///////////////////////
 
 Weapon::Weapon(): equipped(false) {
@@ -187,4 +209,23 @@ Weapon::Weapon(): equipped(false) {
 	std::string roundedWeight = std::to_string(round(weight*100)/100).substr(0, 4);
 	std::string roundedPower = std::to_string(round(power*100)/100).substr(0, 4);
 	name = "+"+roundedPower+" "+weaponType+"<"+roundedWeight+">";
+}
+
+
+void Weapon::onEquip(Actor* owner) {
+	if(!equipped) {
+		owner->name += " (equipped)";
+	}
+	
+	equipped = true;
+}
+
+void Weapon::onUnequip(Actor* owner) {
+	if(equipped) {
+		std::string toRemove = " (equipped)";
+		auto i = owner->name.find(toRemove);
+		owner->name.erase(i, toRemove.length());
+	}
+	
+	equipped = false;
 }
