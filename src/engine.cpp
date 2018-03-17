@@ -112,6 +112,9 @@ void Engine::update() {
 		// insert actors that were spawned this turn into the list
 		actors.insert(actors.end(), toSpawn.begin(), toSpawn.end());
 		toSpawn.clear();
+
+		// 1% chance of a monster spawning in-level
+		map->maybeSpawnMonster(1);
 	}
 }
 

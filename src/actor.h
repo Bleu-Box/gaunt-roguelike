@@ -45,9 +45,9 @@ class Actor {
 	float getDistance(int cx, int cy) const;
 	void addEffect(Effect* effect);
 	void equipArmor(Armor* armor, Actor* owner);
-	void unequipArmor();
-	void equipWeapon(Weapon* weapon, Actor* owner);
-	void unequipWeapon();
+        void unequipArmor();
+        void equipWeapon(Weapon* weapon, Actor* owner);
+        void unequipWeapon();
 };
 
 #endif

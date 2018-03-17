@@ -10,13 +10,14 @@ Gaunt is a roguelike game I'm making. It follows the classic story of going into
 - Open door: o+[arrow key]
 - Pick up item: g
 - Drop item: d+[item letter]
-- Rest a turn: .
+- Rest a turn: r
 - Quaff a potion: q+[item letter]
 - Throw a potion: t+[item letter]+[mouse click at destination]
 - Equip armor: a+[item letter]
 - Unequip armor: A
 - Equip weapon: w+[item letter]
 - Unequip weapon: W
+- Look at tile: l+[mouse click at location]
 
 ## Monsters
 The player will encounter a variety of monsters in the game. Here are some of them:

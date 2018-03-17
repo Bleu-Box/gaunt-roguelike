@@ -195,11 +195,10 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		// unequip armor
 	case 'A': {
 		owner->unequipArmor();
-		engine.gui->message(owner->name+" unequips armor.");
 		return true;
 	}
 
-		// equip weapon
+		// wield weapon
 	case 'w': {
 		Actor* actor = getFromInventory(owner, [](Actor* item) {
 				return item && item->pickable &&
@@ -218,7 +217,6 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		// unequip weapon
 	case 'W': {
 		owner->unequipWeapon();
-		engine.gui->message(owner->name+" unequips armor.");
 		return true;
 	}
 		
@@ -279,7 +277,7 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 	}
 
 		// rest 1 turn
-	case '.': {
+	case 'r': {
 	        return true;
 	}
 

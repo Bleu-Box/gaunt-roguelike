@@ -554,3 +554,19 @@ void Map::spawnHorde(int x, int y) {
 		}
 	}
 }
+
+// Based on a chance, maybe spawn a monster.
+// (used for in-level monster spawning)
+void Map::maybeSpawnMonster(int chance) {
+	TCODRandom* rand = TCODRandom::getInstance();
+
+	if(rand->getInt(0, 100) < chance) {
+		MonsterKind kind = chooseMonsterKind();
+		int i = rand->getInt(0, rooms.size()-1);
+		Room room = rooms[i];
+		
+		int x = rand->getInt(room.x1+1, room.x2-1);
+		int y = rand->getInt(room.y1+1, room.y2-1);
+		spawnMonster(x, y, kind);
+	}
+}

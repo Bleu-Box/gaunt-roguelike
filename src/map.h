@@ -39,6 +39,7 @@ class Map {
 	void setTile(int x, int y, const Tile& tile);
 	Tile getTile(int x, int y) const;
 	TCODPath findPath(int x1, int y1, int x2, int y2, float diagCost=1.41f);
+	void maybeSpawnMonster(int chance);
 	
  private:
 	Tile** tiles;
