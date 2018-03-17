@@ -91,13 +91,20 @@ bool PlayerAi::handleActionKey(Actor* owner, int ascii) {
 		
 		int x, y;
 		std::string occupantName;
-	        engine.pickTile(&x, &y, engine.getFovRadius());
 		
-	        Actor* a = engine.getActorAt(x, y);
+	        engine.pickTile(&x, &y, engine.getFovRadius());
+		Actor* a = engine.getActorAt(x, y);
 		// for some odd reason, checking the location ensures the actor
-		// is real and everything
+		// is real and everything (just doing if(a) doesn't always cut it)
 		if(a && a->x == x && a->y == y) occupantName = a->name;
-		else occupantName = engine.map->getTile(x, y).name;
+		else {
+			// If x and y values are messed up (yes, this can happen)
+			// we can't get an actual tile -- so just fail if the
+			// tile doesn't exist.
+		        Tile* tile = engine.map->getTile(x, y);
+			if(tile != nullptr) occupantName = tile->name;
+			else return false;
+		}
 		
 		engine.gui->message("That's a "+occupantName+".");
 		return true;
@@ -410,7 +417,7 @@ void MonsterAi::moveOrAttack(Actor* owner, int targetx, int targety) {
 	int stepdy = (dy == 0? 0 : dy > 0? 1 : -1);
 
 	// open any doors that stand in our way if possible
-	if(opensDoors && engine.map->getTile(owner->x+stepdx, owner->y+stepdy) == tiles::CLOSED_DOOR_TILE) {
+	if(opensDoors && *engine.map->getTile(owner->x+stepdx, owner->y+stepdy) == tiles::CLOSED_DOOR_TILE) {
 		engine.map->openDoor(owner->x+stepdx, owner->y+stepdy);
 	}
    

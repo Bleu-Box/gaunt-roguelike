@@ -16,7 +16,7 @@ class Map {
 		RAT, KOBOLD, MUSHROOM, BLUE_SHROOM,
 		PURPLE_SHROOM, SLIME, REDCAP, GOBLIN,
 		CENTIPEDE, RED_CENTIPEDE, BRIGHT, NENN,
-		YRCH
+		YRCH, SHROOM_HERDER
 	};
 	
         Map(int width, int height);
@@ -37,7 +37,7 @@ class Map {
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 	void setTile(int x, int y, const Tile& tile);
-	Tile getTile(int x, int y) const;
+	Tile* getTile(int x, int y) const;
 	TCODPath findPath(int x1, int y1, int x2, int y2, float diagCost=1.41f);
 	void maybeSpawnMonster(int chance);
 	
@@ -59,7 +59,7 @@ class Map {
         void addItem(int x, int y);
 	MonsterKind chooseMonsterKind();
 	void spawnMonster(int x, int y, MonsterKind kind);
-	void spawnHorde(int x, int y);
+	void spawnHorde(int x, int y, std::vector<MonsterKind> kinds={});
 };
 
 #endif

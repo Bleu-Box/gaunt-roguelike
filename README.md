@@ -28,6 +28,7 @@ The player will encounter a variety of monsters in the game. Here are some of th
 - Kobold (brownish 'k'): Kobolds are fairly weak, but they are able to open doors.
 - Slime (green 's'): Slimes can be killed very easily, but they split into more slimes when hit.
 - Redcap (red 'R'): Redcaps (a type of human-like mushroom) can open doors, give poison or blindness, and deal damage. They are most commonly encountered in heroes' bane fields (see below).
+- Mushroom Herder (orange 'H'): Mushroom herders are very weak, but can summon mushrooms and redcaps around them.
 - Centipede (orange 'c'): Centipedes are fast, fairly strong, and have a nasty sting.
 - Red Centipede (red 'c'): Red centipedes are like normal centipedes, but their sting also poisons the player.
 - Goblin (green 'g'): Goblins are like kobolds, but stronger.

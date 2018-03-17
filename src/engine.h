@@ -19,7 +19,7 @@ class Engine {
 		NEW_TURN // update things
 	} gameStatus;
 
-	static const int MAX_LEVEL = 10;
+	static const int MAX_LEVEL = 26;
 	std::vector<Actor*> actors;
 	Actor* player;
 	Actor* stairs;

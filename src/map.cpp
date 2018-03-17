@@ -43,7 +43,7 @@ void Map::init() {
 	// also, turn open doors into closed doors
 	for(int x = 0; x < width; x++) {
 		for(int y = 0; y < height; y++) {
-		        if(*tiles[x+y*width] == tiles::DUMMY_TILE)
+	        if(*tiles[x+y*width] == tiles::DUMMY_TILE)
 			        setTile(x, y, tiles::ROCK_TILE);
 			else if(*tiles[x+y*width] == tiles::OPEN_DOOR_TILE)
 				setTile(x, y, tiles::CLOSED_DOOR_TILE);
@@ -123,7 +123,7 @@ void Map::makeRooms(int count) {
 		bool overlap = false;
 		for(int x = x1; x <= x2; x++) {
 			for(int y = y1; y <= y2; y++) {
-				if(getTile(x, y) != tiles::DUMMY_TILE)
+				if(*getTile(x, y) != tiles::DUMMY_TILE)
 					overlap = true;
 			}
 		}
@@ -234,8 +234,10 @@ TCODPath Map::findPath(int x1, int y1, int x2, int y2, float diagCost) {
 	return path;
 }
 
-Tile Map::getTile(int x, int y) const {
-        return *tiles[x+y*width];
+Tile* Map::getTile(int x, int y) const {
+	if(x >= 0 && x <= width && y >= 0 && y <= height)
+		return tiles[x+y*width];
+	else return nullptr;
 }
 
 // not to be confused with Map::initTile
@@ -290,14 +292,14 @@ void Map::addBloodstain(int x, int y, const TCODColor& color) {
 }
 
 void Map::openDoor(int x, int y) {
-	Tile tile = getTile(x, y);
+	Tile tile = *getTile(x, y);
 	if(tile == tiles::CLOSED_DOOR_TILE) {
 		setTile(x, y, tiles::OPEN_DOOR_TILE);
 	} 
 }
 
 void Map::closeDoor(int x, int y) {
-	Tile tile = getTile(x, y);
+	Tile tile = *getTile(x, y);
 	if(tile == tiles::OPEN_DOOR_TILE) {
 		setTile(x, y, tiles::CLOSED_DOOR_TILE);
 	} 
@@ -384,12 +386,16 @@ Map::MonsterKind Map::chooseMonsterKind() {
 	if(level >= 3) candidates.push_back(SLIME);
 	// redcaps are rare
 	if(level >= 4 && rand->getInt(0, 100) < 20) candidates.push_back(REDCAP);
-	if(level >= 5) candidates.push_back(CENTIPEDE);
-	if(level >= 6 && rand->getInt(0, 100) < 30) candidates.push_back(RED_CENTIPEDE);
-	if(level >= 7) candidates.push_back(GOBLIN);
-	if(level >= 8) candidates.push_back(NENN);
-	if(level >= 9) candidates.push_back(YRCH);
-	if(level >= 10 && rand->getInt(0, 100) < 30) candidates.push_back(BRIGHT);
+	if(level >= 5) candidates.push_back(SHROOM_HERDER);
+	if(level >= 6) candidates.push_back(CENTIPEDE);
+	if(level >= 7 && rand->getInt(0, 100) < 30) candidates.push_back(RED_CENTIPEDE);
+	if(level >= 8) {
+		candidates.push_back(GOBLIN);
+		candidates.push_back(NENN);
+	}
+	
+	if(level >= 12) candidates.push_back(YRCH);
+	if(level >= 20 && rand->getInt(0, 100) < 30) candidates.push_back(BRIGHT);
 
 	return candidates[rand->getInt(0, candidates.size()-1)];
 }
@@ -466,7 +472,7 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 		Actor* redcap = new Actor(x, y, 'R', "Redcap", TCODColor::darkerRed);
 		redcap->attacker = new Attacker(4, 80, "clubs");
 		Effect::EffectType types[2] = {Effect::POISON, Effect::BLINDNESS};
-		redcap->attacker->setEffect(types[rand->getInt(0, 1, 0)], rand->getInt(25, 50));
+		redcap->attacker->setEffect(types[rand->getInt(0, 1, 0)], rand->getInt(1, 10));
 		redcap->destructible = new MonsterDestructible(10, 3, 0.5, TCODColor::brass*0.5);
 		redcap->ai = new MonsterAi(1, 5, true);
 		engine.actors.push_back(redcap);
@@ -529,13 +535,38 @@ void Map::spawnMonster(int x, int y, MonsterKind kind) {
 		engine.actors.push_back(bright);
 		break;
 	}
+
+		// can summon mushrooms
+	case SHROOM_HERDER: {
+		Actor* herder = new Actor(x, y, 'H', "Mushroom herder", TCODColor::darkerFlame);
+		herder->attacker = new Attacker(0.2, 60, "slaps");
+		herder->destructible = new MonsterDestructible(5, 1, 1, TCODColor::red);
+		herder->ai = new MonsterAi(1, 15, true, [this](MonsterAi* ai, Actor* owner) {
+				TCODRandom* rand = TCODRandom::getInstance();
+				if(rand->getInt(0, 100) < 20 &&
+				   engine.map->isInFov(owner->x, owner->y)) {
+					std::vector<MonsterKind> kinds = {
+						MonsterKind::REDCAP,
+						MonsterKind::MUSHROOM,
+						MonsterKind::BLUE_SHROOM
+					};
+					
+					spawnHorde(owner->x, owner->y, kinds);
+				} else {
+					ai->pursuePlayer(owner);
+				}
+				
+			});
+		
+		engine.actors.push_back(herder);
+		break;
+	}
 	}
 }
 
-// spawns a horde of monsters
-void Map::spawnHorde(int x, int y) {
-	static const int HORDE_AREA = 3;
-	static const int MAX_HORDE_MEMBERS = 3;
+// spawns a horde of monsters (you can specify which kinds if you like)
+void Map::spawnHorde(int x, int y, std::vector<MonsterKind> kinds) {
+	static const int HORDE_AREA = 1;
 	TCODRandom* rand = TCODRandom::getInstance();
 
 	int hordeMembers = 0;
@@ -543,14 +574,15 @@ void Map::spawnHorde(int x, int y) {
 		for(int j = -HORDE_AREA; j < HORDE_AREA; j++) {
 			int monst_x = x+i;
 			int monst_y = y+j;
-			MonsterKind kind = chooseMonsterKind();
+			MonsterKind kind;
+			if(kinds.empty()) kind = chooseMonsterKind();
+			else kind = kinds[rand->getInt(0, kinds.size()-1)];
+			
 			if(monst_x > 0 && monst_x < width && monst_y > 0 && monst_y < height
 			   && canWalk(monst_x, monst_y) && rand->getInt(0, 100) < 30) {
 				spawnMonster(monst_x, monst_y, kind);
 				hordeMembers++;
 			}
-			
-			if(hordeMembers >= MAX_HORDE_MEMBERS) break;
 		}
 	}
 }

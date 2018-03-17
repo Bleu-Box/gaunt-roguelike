@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - This changelog!
 - Added command for looking at tiles and actors ('l')
+- In-level monster spawning
+- Mushroom herders
 
 ### Changed
 - Now using a new (better) font
