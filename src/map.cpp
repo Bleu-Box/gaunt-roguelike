@@ -36,7 +36,7 @@ void Map::init() {
 		}
 	}
 
-	makeRooms(rand->getInt(5, 15));
+	makeRooms(15);
 	connectRooms();
 	
 	// make dummy tiles (i.e. the ones that aren't part of rooms are tunnels) into solid rock
@@ -50,6 +50,9 @@ void Map::init() {
 		}
 	}
 
+	// now get rid of useless holes in rooms
+	sealHoles();
+	
 	// on later levels, spawn heroes' bane
         if(engine.getLevel() >= 4) {
 		int maxFields = rand->getInt(0, rooms.size()-2);
@@ -171,6 +174,45 @@ void Map::digRoom(Room room) {
 	setTile(room.x2, room.y1, tiles::NE_WALL_TILE);
 	setTile(room.x1, room.y2, tiles::SW_WALL_TILE);
 	setTile(room.x2, room.y2, tiles::SE_WALL_TILE); 
+}
+
+// gets rid of 'holes' in rooms - openings not connected to tunnels
+void Map::sealHoles() {
+	for(Room room : rooms) {
+		for(int x = room.x1; x <= room.x2; x++) {
+			for(int y = room.y1; y <= room.y2; y++) {
+				// if we're looking at a wall space
+				if((x == room.x1 || x == room.x2) || (y == room.y1 || y == room.y2)) {
+					// if tile is floor or closed door
+					Tile* t = getTile(x, y);
+					if(t != nullptr && (*t == tiles::FLOOR_TILE || *t == tiles::CLOSED_DOOR_TILE)) {
+						// search for bordering tunnel tiles
+						bool tunnelFound = false;
+						for(int i = x-1; i <= x+1; i++) {
+							for(int j = y-1; j <= y+1; j++) {
+								Tile* t = getTile(i, j);
+								if(t != nullptr && *t == tiles::TUNNEL_TILE) {
+									tunnelFound = true;
+									break;
+								}
+							}
+
+							if(tunnelFound) break;
+						}
+						
+						// If there aren't bordering tunnel tiles, seal off the hole
+						// using the appropriate wall tile.
+						if(!tunnelFound) {
+							if(x == room.x1 || x == room.x2)
+							        setTile(x, y, tiles::SIDE_WALL_TILE);
+							else if(y == room.y1 || y == room.y2)
+							        setTile(x, y, tiles::TOP_WALL_TILE);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 // use A* to find a path between two rooms, and then dig it

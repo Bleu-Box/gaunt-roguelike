@@ -51,6 +51,7 @@ class Map {
 	void init();
 	void initTile(int x, int y, const Tile& tile);
 	void makeRooms(int count);
+	void sealHoles();
 	void connectRooms();
 	void digRoom(Room room);
 	void digTunnel(Room& from, Room& to);

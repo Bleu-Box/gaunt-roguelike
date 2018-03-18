@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Got rid of some inaccurate information about the game controls in the README
 - Attack messages will not print if the victim died already
+- Rooms won't have 'holes' leading to nowhere anymore
 
 ### Removed
 

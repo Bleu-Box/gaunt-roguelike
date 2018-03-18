@@ -43,5 +43,5 @@ namespace tiles {
 	// spawns redcaps on contact with blood
 	const Tile HEROESBANE_TILE = Tile('"', true, true, "patch of heros' bane", TCODColor::copper);
 }
- 
+
 #endif

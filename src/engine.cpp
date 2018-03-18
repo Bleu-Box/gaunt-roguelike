@@ -125,7 +125,8 @@ void Engine::render() {
 		if(renderMap) map->render();
 
 		for(Actor* actor : actors) {
-			if(map->isInFov(actor->x, actor->y)) {
+			// render all actors in debug mode
+			if(map->isInFov(actor->x, actor->y) || DEBUG_MODE == 1) {
 				if(renderMap || actor == player) actor->render();
 				gui->render();
 			}
